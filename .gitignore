@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+
+.env
+.env.*
+
+.venv/
+venv/
+env/
+
+data/
+outputs/
+
+*.log
+*.tmp
+*.cache
+
+.DS_Store
+Thumbs.db
+
+# Local credentials
+kaggle.json

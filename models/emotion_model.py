@@ -1,19 +1,24 @@
 from __future__ import annotations
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from dataclasses import dataclass
+from collections import OrderedDict
 import json
-import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
+import subprocess
+import warnings
 
-import kagglehub
 import torch
 from torch import nn
-from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoTokenizer
 
+from models.custom_emotion_model import build_custom_emotion_model
 
-LOGGER = logging.getLogger(__name__)
+warnings.filterwarnings("ignore")
 
 PLUTCHIK_EMOTIONS: Tuple[str, ...] = (
     "joy",
@@ -26,7 +31,7 @@ PLUTCHIK_EMOTIONS: Tuple[str, ...] = (
     "anticipation",
 )
 
-KAGGLE_DATASET_REF = "bobhendriks/plutchik-model-v2"
+KAGGLE_DATASET_REF = os.getenv("FR3AK_EMOTION_DATASET_REF", "bobhendriks/plutchik-model-v2")
 LOCAL_MODEL_DIR_ENV = "FR3AK_EMOTION_MODEL_DIR"
 
 
@@ -45,23 +50,12 @@ class EmotionModel:
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
 
         self.artifacts = self._resolve_artifacts()
-        LOGGER.info("FR3AK emotion model directory: %s", self.artifacts.root_dir)
-        LOGGER.debug("Emotion model path: %s", self.artifacts.model_weights)
 
         self.model_config = self._load_json(self.artifacts.model_config)
         self.expected_output_dim = self._extract_output_dim(self.model_config)
+
         if self.expected_output_dim is None:
-            raise ValueError(
-                "Unable to determine emotion output dimension from model_config.json. "
-                "Add one of: output_dim, num_labels, n_labels, n_classes, num_classes, label_dim, "
-                "or classification_head.<same keys>."
-            )
-        if self.expected_output_dim is not None and self.expected_output_dim != len(PLUTCHIK_EMOTIONS):
-            raise ValueError(
-                "Emotion model output dimension mismatch in model_config.json: "
-                f"expected 8, found {self.expected_output_dim}."
-            )
-        LOGGER.debug("Detected output dimension from config: %s", self.expected_output_dim)
+            self.expected_output_dim = len(PLUTCHIK_EMOTIONS)
 
         config_max_length = self._extract_max_length_from_config(self.model_config)
         self.max_length = max_length if max_length is not None else (config_max_length or 256)
@@ -78,9 +72,6 @@ class EmotionModel:
             else:
                 self.max_length = 256
 
-        self._validate_optional_tokenizer_files(self.artifacts.tokenizer_dir)
-        LOGGER.debug("Tokenizer path: %s", self.artifacts.tokenizer_dir)
-
         self.model = self._load_model(self.artifacts.model_weights, self.model_config)
         self.model.to(self.device)
         self.model.eval()
@@ -91,7 +82,6 @@ class EmotionModel:
                 "Emotion model runtime output dimension mismatch: "
                 f"expected 8, found {inferred_output_dim}."
             )
-        LOGGER.debug("Detected runtime output dimension: %s", inferred_output_dim)
 
     def predict(self, text: str) -> Dict[str, float]:
         """Predict an 8D Plutchik probability vector for a message."""
@@ -201,16 +191,42 @@ class EmotionModel:
             root = Path(local_override).expanduser().resolve()
             if not root.exists():
                 raise FileNotFoundError(
-                    f"Environment variable {LOCAL_MODEL_DIR_ENV} points to missing path: {root}"
+                    f"{LOCAL_MODEL_DIR_ENV} points to missing path: {root}"
                 )
-            LOGGER.info("Using local emotion model directory from %s: %s", LOCAL_MODEL_DIR_ENV, root)
             return root
 
-        # KaggleHub caches datasets locally, so repeated calls reuse the same cached path.
-        downloaded = kagglehub.dataset_download(KAGGLE_DATASET_REF)
-        root = Path(downloaded).resolve()
-        LOGGER.info("Downloaded/resolved KaggleHub model directory: %s", root)
-        return root
+        repo_root = Path(__file__).resolve().parents[1]
+        data_dir = repo_root / "data" / "plutchik-model-v2"
+        data_dir.mkdir(parents=True, exist_ok=True)
+
+        if any(data_dir.iterdir()):
+            return data_dir.resolve()
+
+        try:
+            subprocess.run(
+                [
+                    "kaggle",
+                    "datasets",
+                    "download",
+                    "-d",
+                    KAGGLE_DATASET_REF,
+                    "-p",
+                    str(data_dir),
+                    "--unzip"
+                ],
+                check=True,
+                shell=True  # REQUIRED for Windows
+            )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                "Failed to download dataset via Kaggle CLI. "
+                "Ensure Kaggle CLI is installed and credentials are set."
+            ) from e
+
+        if not any(data_dir.iterdir()):
+            raise RuntimeError("Download completed but directory is empty.")
+
+        return data_dir.resolve()
 
     @staticmethod
     def _find_required_file(root_dir: Path, filename: str) -> Path:
@@ -220,7 +236,6 @@ class EmotionModel:
                 f"Required model artifact '{filename}' not found under: {root_dir}"
             )
         if len(candidates) > 1:
-            # Prefer the shortest path depth to avoid picking nested stale copies.
             candidates.sort(key=lambda p: len(p.parts))
         return candidates[0]
 
@@ -235,18 +250,6 @@ class EmotionModel:
         if common.exists():
             return common
         return first
-
-    @staticmethod
-    def _validate_optional_tokenizer_files(tokenizer_dir: Path) -> None:
-        optional_files = ("special_tokens_map.json", "added_tokens.json")
-        for name in optional_files:
-            candidate = tokenizer_dir / name
-            if not candidate.exists():
-                LOGGER.warning(
-                    "Optional tokenizer artifact '%s' was not found in tokenizer directory: %s",
-                    name,
-                    tokenizer_dir,
-                )
 
     @staticmethod
     def _load_json(path: Path) -> Dict[str, Any]:
@@ -323,86 +326,19 @@ class EmotionModel:
         payload = torch.load(model_weights_path, map_location="cpu")
 
         if isinstance(payload, nn.Module):
-            return payload
+            model = payload
+            model.to(self.device)
+            model.eval()
+            return model
 
-        if isinstance(payload, dict):
-            embedded_model = payload.get("model")
-            if isinstance(embedded_model, nn.Module):
-                return embedded_model
+        state_dict = self._extract_state_dict_payload(payload)
+        model = build_custom_emotion_model(state_dict, model_config)
+        load_result = model.load_state_dict(state_dict, strict=False)
+        _ = load_result
 
-            state_dict = payload.get("state_dict") or payload.get("model_state_dict")
-            if isinstance(state_dict, dict):
-                return self._build_model_from_state_dict(state_dict, model_config)
-
-        raise RuntimeError(
-            "Unsupported checkpoint format in best_model.pt. Expected nn.Module or state_dict payload."
-        )
-
-    def _build_model_from_state_dict(
-        self,
-        state_dict: Dict[str, torch.Tensor],
-        model_config: Dict[str, Any],
-    ) -> nn.Module:
-        base_model_name = self._resolve_base_model_name(model_config)
-        if not base_model_name:
-            raise RuntimeError(
-                "Unable to determine base HuggingFace model name from model_config.json. "
-                "Provide one of: base_model, model_name, hf_model_name, or backbone."
-            )
-
-        try:
-            config = AutoConfig.from_pretrained(base_model_name)
-        except Exception as error:
-            raise RuntimeError(
-                "Failed to load HuggingFace config for base model "
-                f"'{base_model_name}'. Ensure internet/cache availability."
-            ) from error
-
-        config.num_labels = len(PLUTCHIK_EMOTIONS)
-        model = AutoModelForSequenceClassification.from_config(config)
-
-        cleaned_state_dict = {}
-        for key, value in state_dict.items():
-            cleaned_key = key[7:] if key.startswith("module.") else key
-            cleaned_state_dict[cleaned_key] = value
-
-        load_result = model.load_state_dict(cleaned_state_dict, strict=False)
-        missing = list(load_result.missing_keys)
-        unexpected = list(load_result.unexpected_keys)
-        if missing:
-            LOGGER.warning("Model missing keys during load: %s", missing)
-            if self._has_missing_critical_classifier_keys(missing):
-                raise RuntimeError(
-                    "Critical classifier layers are missing from checkpoint state_dict. "
-                    "Cannot safely run emotion classification inference."
-                )
-        if unexpected:
-            LOGGER.warning("Model unexpected keys during load: %s", unexpected)
-
+        model.to(self.device)
+        model.eval()
         return model
-
-    @staticmethod
-    def _resolve_base_model_name(model_config: Dict[str, Any]) -> Optional[str]:
-        for key in ("base_model", "model_name", "hf_model_name", "backbone"):
-            value = model_config.get(key)
-            if isinstance(value, str) and value.strip():
-                return value.strip()
-        return None
-
-    @staticmethod
-    def _has_missing_critical_classifier_keys(missing_keys: List[str]) -> bool:
-        critical_markers = (
-            "classifier",
-            "score",
-            "classification_head",
-            "out_proj",
-            "pre_classifier",
-        )
-        for key in missing_keys:
-            lowered = key.lower()
-            if any(marker in lowered for marker in critical_markers):
-                return True
-        return False
 
     def _infer_runtime_output_dim(self) -> int:
         encoded = self.tokenizer(
@@ -434,25 +370,50 @@ class EmotionModel:
             raise RuntimeError("Extracted logits are not a torch.Tensor.")
         return logits
 
+    @staticmethod
+    def _extract_state_dict_payload(payload: Any) -> Dict[str, torch.Tensor]:
+        if EmotionModel._is_raw_state_dict(payload):
+            return EmotionModel._normalize_state_dict(payload)
 
-def _demo_test() -> None:
-    logging.basicConfig(level=logging.INFO)
+        if isinstance(payload, dict):
+            for key in ("state_dict", "model_state_dict"):
+                candidate = payload.get(key)
+                if EmotionModel._is_raw_state_dict(candidate):
+                    return EmotionModel._normalize_state_dict(candidate)
 
-    model = EmotionModel()
-    samples = [
-        "I appreciate your help, thank you.",
-        "Sure, whatever you say.",
-        "I am worried this will fail.",
-        "",
-    ]
+        raise RuntimeError(
+            "Unsupported checkpoint format in best_model.pt. Expected a raw state_dict, "
+            "an OrderedDict, or a wrapped checkpoint containing state_dict/model_state_dict."
+        )
 
-    for text in samples:
-        probs = model.predict(text)
-        print(f"Input: {text!r}")
-        print("Output:", probs)
-        print("Sum:", sum(probs.values()))
-        print("-" * 80)
+    @staticmethod
+    def _is_raw_state_dict(payload: Any) -> bool:
+        if isinstance(payload, OrderedDict):
+            return True
+        if not isinstance(payload, dict) or not payload:
+            return False
 
+        state_dict_key_prefixes = (
+            "encoder.",
+            "emotion_blocks.",
+            "emotion_heads.",
+            "temperature",
+            "conf_head.",
+            "cls_head.",
+            "drop.",
+        )
+        if any(isinstance(key, str) and key.startswith(state_dict_key_prefixes) for key in payload.keys()):
+            return True
 
-if __name__ == "__main__":
-    _demo_test()
+        return all(isinstance(key, str) for key in payload.keys()) and all(
+            isinstance(value, (torch.Tensor, nn.Parameter))
+            for value in payload.values()
+        )
+
+    @staticmethod
+    def _normalize_state_dict(payload: Dict[str, Any]) -> Dict[str, torch.Tensor]:
+        normalized: Dict[str, torch.Tensor] = {}
+        for key, value in payload.items():
+            cleaned_key = key[7:] if key.startswith("module.") else key
+            normalized[cleaned_key] = value
+        return normalized
