@@ -4,6 +4,9 @@ from pathlib import Path
 import re
 from typing import Any, Dict, List, Mapping
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from pipeline.analyzer import analyze_conversation
 from pipeline.insights import analyze_insights
 from pipeline.visualizer import build_visualization_data, run_all_plots

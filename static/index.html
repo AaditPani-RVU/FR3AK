@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PEAK — Conversation Analysis</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ── Reset & Base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #070810;
+  --bg1:       #0c0d18;
+  --bg2:       #111220;
+  --bg3:       #181928;
+  --amber:     #d4824a;
+  --amber-dim: #a0612e;
+  --amber-glow:rgba(212,130,74,.18);
+  --cyan:      #2dd4bf;
+  --cyan-dim:  #1a9e8e;
+  --red:       #e85460;
+  --green:     #4ade80;
+  --text:      #e8dcc8;
+  --text2:     #a09888;
+  --text3:     #5a5568;
+  --border:    rgba(255,255,255,.07);
+  --border2:   rgba(255,255,255,.12);
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'Outfit', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --r:         12px;
+  --r2:        20px;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* subtle noise overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 180px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Layout ───────────────────────────────────────────────── */
+.shell {
+  position: relative;
+  min-height: 100vh;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Nav ──────────────────────────────────────────────────── */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 36px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,8,16,.85);
+  backdrop-filter: blur(16px);
+  position: sticky; top: 0; z-index: 100;
+}
+
+.nav-logo {
+  font-family: var(--font-head);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  color: var(--amber);
+  text-decoration: none;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer;
+}
+.nav-logo-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 10px var(--cyan);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .5; transform: scale(.75); }
+}
+
+.nav-crumb {
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  color: var(--text3);
+  display: flex; align-items: center; gap: 8px;
+}
+.nav-crumb span { color: var(--text2); }
+.nav-crumb .sep { color: var(--text3); }
+
+.nav-actions { display: flex; gap: 10px; }
+
+/* ── Buttons ──────────────────────────────────────────────── */
+.btn {
+  font-family: var(--font-body);
+  font-size: .85rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  padding: 8px 20px;
+  border-radius: var(--r);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all .18s ease;
+  white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border2);
+  color: var(--text2);
+}
+.btn-ghost:hover {
+  border-color: var(--amber-dim);
+  color: var(--amber);
+  background: var(--amber-glow);
+}
+.btn-primary {
+  background: var(--amber);
+  color: #0a0810;
+  border-color: var(--amber);
+}
+.btn-primary:hover {
+  background: #e09058;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(212,130,74,.35);
+}
+.btn-cyan {
+  background: transparent;
+  border-color: var(--cyan-dim);
+  color: var(--cyan);
+}
+.btn-cyan:hover {
+  background: rgba(45,212,191,.12);
+  border-color: var(--cyan);
+  transform: translateY(-1px);
+}
+.btn:disabled {
+  opacity: .4; cursor: not-allowed; transform: none !important;
+}
+
+/* ── Views ────────────────────────────────────────────────── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── Upload View ──────────────────────────────────────────── */
+.upload-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  min-height: calc(100vh - 70px);
+}
+
+.upload-hero {
+  text-align: center;
+  margin-bottom: 48px;
+  animation: fadeUp .6s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  border: 1px solid rgba(45,212,191,.3);
+  border-radius: 999px;
+  padding: 4px 14px;
+  margin-bottom: 24px;
+}
+
+.hero-title {
+  font-family: var(--font-head);
+  font-size: clamp(2.8rem, 7vw, 5rem);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -.01em;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.hero-title em {
+  font-style: normal;
+  color: var(--amber);
+}
+
+.hero-tagline {
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin: 14px 0 0;
+}
+
+.hero-sub {
+  font-size: 1.05rem;
+  color: var(--text2);
+  max-width: 480px;
+  margin: 16px auto 0;
+  font-weight: 300;
+}
+
+/* Drop zone */
+.dropzone {
+  position: relative;
+  width: 100%;
+  max-width: 540px;
+  border: 1.5px dashed rgba(212,130,74,.35);
+  border-radius: var(--r2);
+  background: rgba(212,130,74,.04);
+  padding: 52px 36px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .22s ease;
+  animation: fadeUp .6s .1s ease both;
+}
+.dropzone:hover, .dropzone.drag-over {
+  border-color: var(--amber);
+  background: rgba(212,130,74,.09);
+  box-shadow: 0 0 0 1px rgba(212,130,74,.2), 0 12px 48px rgba(212,130,74,.12);
+}
+.dropzone input[type="file"] {
+  position: absolute; inset: 0;
+  opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+
+.dz-icon {
+  width: 52px; height: 52px;
+  margin: 0 auto 18px;
+  color: var(--amber);
+  opacity: .8;
+}
+.dz-title {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.dz-sub {
+  font-size: .84rem;
+  color: var(--text2);
+}
+.dz-types {
+  display: inline-flex; gap: 8px;
+  margin-top: 20px;
+}
+.dz-type {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  color: var(--text3);
+}
+
+.upload-file-name {
+  display: none;
+  margin-top: 18px;
+  font-family: var(--font-mono);
+  font-size: .82rem;
+  color: var(--cyan);
+  padding: 8px 16px;
+  background: rgba(45,212,191,.08);
+  border-radius: 8px;
+  border: 1px solid rgba(45,212,191,.2);
+  max-width: 540px;
+  word-break: break-all;
+  animation: fadeUp .3s ease both;
+}
+
+.upload-actions {
+  margin-top: 24px;
+  animation: fadeUp .6s .2s ease both;
+}
+
+/* Progress bar */
+.progress-wrap {
+  display: none;
+  width: 100%;
+  max-width: 540px;
+  margin-top: 28px;
+  animation: fadeUp .3s ease both;
+}
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  color: var(--text2);
+  margin-bottom: 8px;
+  display: flex; justify-content: space-between;
+}
+.progress-bar {
+  height: 3px;
+  background: var(--bg3);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--amber), var(--cyan));
+  border-radius: 99px;
+  transition: width .4s ease;
+  animation: shimmer 1.8s infinite;
+  background-size: 200% 100%;
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ── User Select View ─────────────────────────────────────── */
+.page-content {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+.page-header {
+  margin-bottom: 36px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-title {
+  font-family: var(--font-head);
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.page-desc {
+  font-size: .9rem;
+  color: var(--text2);
+  margin-top: 4px;
+}
+
+.user-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+}
+
+.user-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 24px;
+  cursor: pointer;
+  transition: all .2s ease;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp .4s ease both;
+}
+.user-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: var(--user-color, var(--amber));
+  opacity: .85;
+}
+.user-card:hover {
+  border-color: var(--border2);
+  background: var(--bg3);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0,0,0,.4);
+}
+
+.user-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.user-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--user-color, var(--amber));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 1rem;
+  color: #070810;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.user-name {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+  margin-left: 12px;
+}
+.user-msg-count {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--text3);
+}
+
+.tag-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 16px;
+}
+.tag {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.tag-tone-positive { color: #4ade80; border-color: rgba(74,222,128,.35); background: rgba(74,222,128,.08); }
+.tag-tone-negative { color: var(--red); border-color: rgba(232,84,96,.35); background: rgba(232,84,96,.08); }
+.tag-tone-mixed    { color: #fbbf24; border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.08); }
+.tag-tone-dynamic  { color: var(--cyan); border-color: rgba(45,212,191,.35); background: rgba(45,212,191,.08); }
+.tag-neutral { color: var(--text2); border-color: var(--border2); background: rgba(255,255,255,.04); }
+.tag-risk    { color: var(--red); border-color: rgba(232,84,96,.35); background: rgba(232,84,96,.08); }
+
+.user-summary-short {
+  font-size: .82rem;
+  color: var(--text2);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Analysis View ────────────────────────────────────────── */
+.analysis-layout {
+  display: grid;
+  grid-template-columns: 1fr 460px;
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 1080px) {
+  .analysis-layout { grid-template-columns: 1fr; }
+}
+
+.analysis-left { display: flex; flex-direction: column; gap: 20px; }
+.analysis-right { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 90px; }
+
+/* Profile card */
+.profile-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+}
+.profile-card::after {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: var(--user-color-a, rgba(212,130,74,.08));
+  pointer-events: none;
+}
+
+.profile-head {
+  display: flex; align-items: center; gap: 16px;
+  margin-bottom: 20px;
+}
+.profile-avatar {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--user-color, var(--amber));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head);
+  font-weight: 800;
+  font-size: 1.4rem;
+  color: #070810;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.profile-name-wrap {}
+.profile-name {
+  font-family: var(--font-head);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+}
+.profile-dominant {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--text3);
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.profile-summary {
+  font-size: .9rem;
+  color: var(--text2);
+  line-height: 1.65;
+  margin-bottom: 20px;
+  padding-left: 16px;
+  border-left: 2px solid var(--user-color, var(--amber));
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.stat-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  text-align: center;
+}
+.stat-val {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+}
+.stat-key {
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-top: 3px;
+}
+
+/* chart card */
+.chart-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 24px;
+}
+.card-title {
+  font-family: var(--font-head);
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--user-color, var(--amber));
+  box-shadow: 0 0 8px var(--user-color, var(--amber));
+}
+
+/* Plutchik wheel card */
+.wheel-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.wheel-title {
+  font-family: var(--font-head);
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 22px;
+  text-align: center;
+  display: flex; align-items: center; gap: 8px;
+}
+#wheel-svg-container {
+  width: 100%;
+  max-width: 400px;
+}
+#wheel-svg-container svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* risk flags */
+.risk-flags {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: 16px;
+}
+
+/* ── Conversation Modal ────────────────────────────────────── */
+.modal-backdrop {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(7,8,16,.88);
+  backdrop-filter: blur(8px);
+  z-index: 200;
+  animation: fadeIn .2s ease;
+}
+.modal-backdrop.open { display: flex; align-items: center; justify-content: center; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--bg1);
+  border: 1px solid var(--border2);
+  border-radius: var(--r2);
+  width: 90%; max-width: 680px;
+  max-height: 82vh;
+  display: flex; flex-direction: column;
+  animation: slideUp .25s ease;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6);
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.modal-title {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.modal-meta {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--text3);
+  margin-top: 2px;
+}
+.modal-close {
+  background: none; border: none;
+  color: var(--text3); cursor: pointer;
+  font-size: 1.4rem; line-height: 1;
+  padding: 4px;
+  transition: color .15s;
+}
+.modal-close:hover { color: var(--text); }
+.modal-body {
+  overflow-y: auto;
+  padding: 16px 24px;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg3) transparent;
+}
+
+.msg-item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.msg-item:last-child { border-bottom: none; }
+.msg-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head);
+  font-size: .7rem;
+  font-weight: 700;
+  color: #070810;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.msg-body {}
+.msg-meta {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 3px;
+}
+.msg-speaker {
+  font-family: var(--font-head);
+  font-size: .8rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+}
+.msg-time {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  color: var(--text3);
+}
+.msg-flags {
+  display: flex; gap: 5px;
+}
+.msg-flag {
+  font-family: var(--font-mono);
+  font-size: .6rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.msg-flag-sarcasm  { color: #fbbf24; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.25); }
+.msg-flag-manip    { color: var(--red); background: rgba(232,84,96,.1); border: 1px solid rgba(232,84,96,.25); }
+.msg-text {
+  font-size: .88rem;
+  color: var(--text2);
+  line-height: 1.55;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 99px; }
+
+/* ── Toast ─────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 28px; right: 28px;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 12px 20px;
+  font-size: .85rem;
+  color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  z-index: 999;
+  transform: translateY(10px);
+  opacity: 0;
+  transition: all .3s ease;
+  pointer-events: none;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { border-color: rgba(232,84,96,.4); color: var(--red); }
+
+/* ── Utility ──────────────────────────────────────────────── */
+.flex-center { display: flex; align-items: center; }
+.gap-8  { gap: 8px; }
+.gap-12 { gap: 12px; }
+</style>
+</head>
+
+<body>
+<div class="shell">
+
+<!-- ═══ NAV ═══════════════════════════════════════════════════ -->
+<nav class="nav">
+  <div class="nav-logo" onclick="goHome()">
+    <div class="nav-logo-dot"></div>
+  </div>
+  <div class="nav-crumb" id="nav-crumb"></div>
+  <div class="nav-actions" id="nav-actions"></div>
+</nav>
+
+<!-- ═══ UPLOAD VIEW ════════════════════════════════════════════ -->
+<div id="view-upload" class="view active upload-view">
+  <div class="upload-hero">
+    <div class="hero-tag">Conversation Forensics Engine</div>
+    <h1 class="hero-title">
+      Functional Reasoning &amp;<br/>
+      <em>Emotional Analysis</em>
+    </h1>
+    <p class="hero-tagline">Emotion &bull; Behavior &bull; Insight</p>
+    <p class="hero-sub">Upload a conversation export to generate user profiles, emotional trends, and behavior signals.</p>
+  </div>
+
+  <div class="dropzone" id="dropzone">
+    <input type="file" id="file-input" accept=".txt,.json" />
+    <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    <div class="dz-title">Drop your conversation file here</div>
+    <div class="dz-sub">or click to browse your files</div>
+    <div class="dz-types">
+      <span class="dz-type">.txt</span>
+      <span class="dz-type">.json</span>
+    </div>
+  </div>
+
+  <div class="upload-file-name" id="upload-file-name"></div>
+
+  <div class="upload-actions">
+    <button class="btn btn-primary" id="btn-run" disabled onclick="runPipeline()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Run FR3AK Pipeline
+    </button>
+  </div>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-label">
+      <span id="progress-status">Initializing pipeline…</span>
+      <span id="progress-pct"></span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</div>
+
+<!-- ═══ USER SELECT VIEW ═══════════════════════════════════════ -->
+<div id="view-users" class="view">
+  <div class="page-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Select a participant</div>
+        <div class="page-desc" id="users-file-desc"></div>
+      </div>
+      <button class="btn btn-cyan" onclick="openConvModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        View Conversation
+      </button>
+    </div>
+    <div class="user-grid" id="user-grid"></div>
+  </div>
+</div>
+
+<!-- ═══ ANALYSIS VIEW ══════════════════════════════════════════ -->
+<div id="view-analysis" class="view">
+  <div class="page-content">
+    <div class="analysis-layout">
+      <div class="analysis-left" id="analysis-left"></div>
+      <div class="analysis-right" id="analysis-right"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CONVERSATION MODAL ══════════════════════════════════════ -->
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeConvModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Conversation Log</div>
+        <div class="modal-meta" id="modal-meta"></div>
+      </div>
+      <button class="modal-close" onclick="closeConvModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ═══ TOAST ═══════════════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+</div><!-- .shell -->
+
+<script>
+// ── State ─────────────────────────────────────────────────────
+const S = {
+  file: null,
+  data: null,       // full API response
+  userColors: {},
+  charts: {},       // Chart.js instances keyed by canvas id
+};
+
+const PALETTE = [
+  '#d4824a','#2dd4bf','#a78bfa','#f472b6','#60a5fa','#34d399','#fb923c','#e879f9'
+];
+
+const EMOTION_COLORS = {
+  joy:          '#FFD700',
+  trust:        '#77DD77',
+  fear:         '#20B2AA',
+  surprise:     '#87CEEB',
+  sadness:      '#4169E1',
+  disgust:      '#9370DB',
+  anger:        '#FF4500',
+  anticipation: '#FF8C00',
+};
+const EMOTION_ORDER = ['joy','trust','fear','surprise','sadness','disgust','anger','anticipation'];
+
+// ── Utilities ────────────────────────────────────────────────
+function getUserColor(user) {
+  if (!S.userColors[user]) {
+    const idx = Object.keys(S.userColors).length;
+    S.userColors[user] = PALETTE[idx % PALETTE.length];
+  }
+  return S.userColors[user];
+}
+
+function hexToRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '') + ' show';
+  setTimeout(() => t.className = 'toast', 3200);
+}
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goHome() {
+  showView('view-upload');
+  updateNav('home');
+}
+
+function updateNav(page, extra = '') {
+  const crumb = document.getElementById('nav-crumb');
+  const actions = document.getElementById('nav-actions');
+
+  if (page === 'home') {
+    crumb.innerHTML = '';
+    actions.innerHTML = '';
+  } else if (page === 'users') {
+    crumb.innerHTML = `<span>Home</span><span class="sep">/</span><span>Participants</span>`;
+    actions.innerHTML = `<button class="btn btn-ghost" onclick="goHome()">← New file</button>`;
+  } else if (page === 'analysis') {
+    crumb.innerHTML = `<span onclick="showView('view-users');updateNav('users')" style="cursor:pointer">Participants</span><span class="sep">/</span><span style="color:var(--amber)">${extra}</span>`;
+    actions.innerHTML = `
+      <button class="btn btn-ghost" onclick="showView('view-users');updateNav('users')">← All users</button>
+      <button class="btn btn-cyan" onclick="openConvModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        View Conversation
+      </button>`;
+  }
+}
+
+// ── File Upload ──────────────────────────────────────────────
+const dz = document.getElementById('dropzone');
+const fi = document.getElementById('file-input');
+
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) setFile(f);
+});
+fi.addEventListener('change', () => { if (fi.files[0]) setFile(fi.files[0]); });
+
+function setFile(f) {
+  S.file = f;
+  const label = document.getElementById('upload-file-name');
+  label.style.display = 'block';
+  label.textContent = '📎 ' + f.name + '  (' + (f.size/1024).toFixed(1) + ' KB)';
+  document.getElementById('btn-run').disabled = false;
+}
+
+// ── Pipeline ──────────────────────────────────────────────────
+async function runPipeline() {
+  if (!S.file) return;
+
+  const btn = document.getElementById('btn-run');
+  btn.disabled = true;
+
+  const pw = document.getElementById('progress-wrap');
+  const pf = document.getElementById('progress-fill');
+  const ps = document.getElementById('progress-status');
+  pw.style.display = 'block';
+
+  const steps = [
+    [10, 'Parsing conversation…'],
+    [30, 'Running emotion model…'],
+    [60, 'Detecting behavior signals…'],
+    [80, 'Generating insights…'],
+    [95, 'Building visualization data…'],
+  ];
+
+  let stepIdx = 0;
+  const tick = setInterval(() => {
+    if (stepIdx < steps.length) {
+      const [pct, label] = steps[stepIdx++];
+      pf.style.width = pct + '%';
+      ps.textContent = label;
+    }
+  }, 600);
+
+  try {
+    const form = new FormData();
+    form.append('file', S.file);
+    const res = await fetch('/api/analyze', { method: 'POST', body: form });
+    clearInterval(tick);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Server error' }));
+      throw new Error(err.detail || 'Request failed');
+    }
+    pf.style.width = '100%';
+    ps.textContent = 'Complete.';
+    S.data = await res.json();
+    setTimeout(() => {
+      pw.style.display = 'none';
+      btn.disabled = false;
+      renderUsers();
+    }, 500);
+  } catch (e) {
+    clearInterval(tick);
+    pw.style.display = 'none';
+    btn.disabled = false;
+    showToast(e.message, true);
+  }
+}
+
+// ── User Select ───────────────────────────────────────────────
+function renderUsers() {
+  const insights = S.data.insights || {};
+  const analysis = S.data.analysis || {};
+  const users = Object.keys(insights);
+  if (!users.length) { showToast('No users found in data.', true); return; }
+
+  // pre-assign colors
+  users.forEach(u => getUserColor(u));
+
+  const grid = document.getElementById('user-grid');
+  grid.innerHTML = '';
+
+  users.forEach((user, i) => {
+    const profile = insights[user] || {};
+    const userStats = (analysis.users || {})[user] || {};
+    const color = getUserColor(user);
+    const tone = profile.emotional_tone || 'mixed';
+    const msgCount = userStats.message_count || 0;
+    const flags = profile.risk_flags || [];
+
+    const card = document.createElement('div');
+    card.className = 'user-card';
+    card.style.setProperty('--user-color', color);
+    card.style.animationDelay = (i * 0.07) + 's';
+
+    const toneClass = 'tag-tone-' + tone;
+    const flagsHtml = flags.slice(0,2).map(f =>
+      `<span class="tag tag-risk">${f}</span>`).join('');
+
+    card.innerHTML = `
+      <div class="user-card-head">
+        <div class="flex-center gap-12">
+          <div class="user-avatar" style="background:${color}">${user[0]}</div>
+          <div class="user-name">${user}</div>
+        </div>
+        <div class="user-msg-count">${msgCount} msg${msgCount!==1?'s':''}</div>
+      </div>
+      <div class="tag-row">
+        <span class="tag ${toneClass}">tone: ${tone}</span>
+        <span class="tag tag-neutral">sarcasm: ${profile.sarcasm_level||'low'}</span>
+        <span class="tag tag-neutral">manip: ${profile.manipulation_level||'low'}</span>
+        ${flagsHtml}
+      </div>
+      <div class="user-summary-short">${profile.summary || ''}</div>
+    `;
+    card.addEventListener('click', () => renderAnalysis(user));
+    grid.appendChild(card);
+  });
+
+  const filename = S.data.filename || '';
+  document.getElementById('users-file-desc').textContent =
+    filename ? `Analysed from: ${filename} · ${users.length} participants found` : `${users.length} participants found`;
+
+  showView('view-users');
+  updateNav('users');
+}
+
+// ── Analysis View ─────────────────────────────────────────────
+function renderAnalysis(user) {
+  const insights  = S.data.insights  || {};
+  const analysis  = S.data.analysis  || {};
+  const profile   = insights[user]   || {};
+  const userStats = (analysis.users  || {})[user] || {};
+  const messages  = (analysis.messages || []).filter(m => m.speaker === user)
+                    .sort((a,b) => (a.index||0)-(b.index||0));
+  const color     = getUserColor(user);
+  const emotionAvg = userStats.emotion_avg || new Array(8).fill(0);
+
+  // destroy old charts
+  Object.values(S.charts).forEach(c => c.destroy());
+  S.charts = {};
+
+  // ── LEFT: profile + charts ───────────────────────────────
+  const left = document.getElementById('analysis-left');
+  left.innerHTML = '';
+
+  // profile card
+  const profileCard = document.createElement('div');
+  profileCard.className = 'profile-card';
+  profileCard.style.setProperty('--user-color', color);
+  profileCard.style.setProperty('--user-color-a', hexToRgba(color, 0.08));
+
+  const tone = profile.emotional_tone || 'mixed';
+  const toneClass = 'tag-tone-' + tone;
+  const flags = profile.risk_flags || [];
+  const flagsHtml = flags.length
+    ? `<div class="risk-flags">${flags.map(f=>`<span class="tag tag-risk">⚠ ${f}</span>`).join('')}</div>`
+    : '';
+
+  profileCard.innerHTML = `
+    <div class="profile-head">
+      <div class="profile-avatar" style="background:${color}">${user[0]}</div>
+      <div class="profile-name-wrap">
+        <div class="profile-name">${user}</div>
+        <div class="profile-dominant">dominant emotion · ${profile.dominant_emotion||'unknown'}</div>
+      </div>
+    </div>
+    <div class="profile-summary">${profile.summary||'No summary available.'}</div>
+    <div class="stats-row">
+      <div class="stat-box"><div class="stat-val">${tone}</div><div class="stat-key">Tone</div></div>
+      <div class="stat-box"><div class="stat-val">${profile.sarcasm_level||'low'}</div><div class="stat-key">Sarcasm</div></div>
+      <div class="stat-box"><div class="stat-val">${profile.manipulation_level||'low'}</div><div class="stat-key">Manipulation</div></div>
+      <div class="stat-box"><div class="stat-val">${profile.emotional_stability||'stable'}</div><div class="stat-key">Stability</div></div>
+    </div>
+    ${flagsHtml}
+    <div class="tag-row" style="margin-top:14px">
+      <span class="tag ${toneClass}">tone: ${tone}</span>
+      <span class="tag tag-neutral">neutral: ${profile.neutral_level||'low'}</span>
+      <span class="tag tag-neutral">${profile.emotional_intensity_level||'low emotional intensity'}</span>
+    </div>
+  `;
+  left.appendChild(profileCard);
+
+  // emotion trend chart
+  left.appendChild(buildChartCard(
+    'Emotion Intensity Over Time',
+    color,
+    'emotion-trend',
+    (ctx) => {
+      const xs = messages.map(m => m.index);
+      const ys = messages.map(m => +(m.emotion_intensity||0).toFixed(3));
+      S.charts['emotion-trend'] = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: xs,
+          datasets: [{
+            label: 'Emotion Intensity',
+            data: ys,
+            borderColor: color,
+            backgroundColor: hexToRgba(color, 0.08),
+            borderWidth: 2.2,
+            pointBackgroundColor: color,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            tension: 0.42,
+            fill: true,
+          }]
+        },
+        options: chartOptions('Message Index', 'Intensity'),
+      });
+    }
+  ));
+
+  // sarcasm timeline
+  left.appendChild(buildChartCard(
+    'Sarcasm Detection Timeline',
+    '#fbbf24',
+    'sarcasm-chart',
+    (ctx) => {
+      const xs = messages.map(m => m.index);
+      const ys = messages.map(m => m.is_sarcastic ? 1 : 0);
+      S.charts['sarcasm-chart'] = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: 'Sarcastic',
+            data: xs.map((x,i) => ({ x, y: ys[i] })),
+            backgroundColor: xs.map((_,i) => ys[i] ? '#fbbf24' : hexToRgba(color, 0.25)),
+            pointRadius: xs.map((_,i) => ys[i] ? 7 : 4),
+            pointHoverRadius: 9,
+          }]
+        },
+        options: {
+          ...chartOptions('Message Index', ''),
+          scales: {
+            x: { ...axisStyle('Message Index'), grid: { color: 'rgba(255,255,255,.05)' } },
+            y: { ...axisStyle(''), min: -0.2, max: 1.4, ticks: { callback: v => v===1?'Yes':v===0?'No':'', color: '#5a5568', font: { family:'JetBrains Mono', size:11 } }, grid: { color: 'rgba(255,255,255,.05)' } }
+          }
+        },
+      });
+    }
+  ));
+
+  // manipulation timeline
+  left.appendChild(buildChartCard(
+    'Manipulation Detection Timeline',
+    '#e85460',
+    'manip-chart',
+    (ctx) => {
+      const xs = messages.map(m => m.index);
+      const ys = messages.map(m => m.label === 'manipulative' ? 1 : 0);
+      S.charts['manip-chart'] = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: 'Manipulative',
+            data: xs.map((x,i) => ({ x, y: ys[i] })),
+            backgroundColor: xs.map((_,i) => ys[i] ? '#e85460' : hexToRgba(color, 0.25)),
+            pointRadius: xs.map((_,i) => ys[i] ? 7 : 4),
+            pointHoverRadius: 9,
+          }]
+        },
+        options: {
+          ...chartOptions('Message Index', ''),
+          scales: {
+            x: { ...axisStyle('Message Index'), grid: { color: 'rgba(255,255,255,.05)' } },
+            y: { ...axisStyle(''), min: -0.2, max: 1.4, ticks: { callback: v => v===1?'Yes':v===0?'No':'', color: '#5a5568', font: { family:'JetBrains Mono', size:11 } }, grid: { color: 'rgba(255,255,255,.05)' } }
+          }
+        },
+      });
+    }
+  ));
+
+  // ── RIGHT: plutchik wheel ────────────────────────────────
+  const right = document.getElementById('analysis-right');
+  right.innerHTML = '';
+
+  const wheelCard = document.createElement('div');
+  wheelCard.className = 'wheel-card';
+  wheelCard.innerHTML = `
+    <div class="wheel-title">
+      <div class="card-title-dot" style="background:${color};box-shadow:0 0 8px ${color}"></div>
+      Emotion Signature
+    </div>
+    <div id="wheel-svg-container"></div>
+  `;
+  right.appendChild(wheelCard);
+  // show the view first so canvases have real dimensions
+  showView('view-analysis');
+  updateNav('analysis', user);
+
+  // render wheel (SVG — works regardless of layout timing)
+  drawPlutchikWheel(emotionAvg, color);
+
+  // render Chart.js charts after layout pass
+  setTimeout(() => {
+    left.querySelectorAll('[data-chart]').forEach(card => {
+      if (card._renderChart && card._canvasId) {
+        const el = document.getElementById(card._canvasId);
+        if (el) card._renderChart(el.getContext('2d'));
+      }
+    });
+  }, 30);
+}
+
+// ── Chart helpers ─────────────────────────────────────────────
+function buildChartCard(title, dotColor, canvasId, renderFn) {
+  const card = document.createElement('div');
+  card.className = 'chart-card';
+  card.dataset.chart = canvasId;
+  card.innerHTML = `
+    <div class="card-title">
+      <div class="card-title-dot" style="background:${dotColor};box-shadow:0 0 8px ${hexToRgba(dotColor,0.6)}"></div>
+      ${title}
+    </div>
+    <canvas id="${canvasId}" height="140"></canvas>
+  `;
+  // renderFn is called by renderAnalysis after the view is shown
+  card._renderChart = renderFn;
+  card._canvasId    = canvasId;
+  return card;
+}
+
+function axisStyle(label) {
+  return {
+    title: { display: !!label, text: label, color: '#5a5568', font: { family:'Outfit', size:11 } },
+    ticks: { color: '#5a5568', font: { family:'JetBrains Mono', size:11 } },
+    grid:  { color: 'rgba(255,255,255,.05)' },
+    border:{ color: 'rgba(255,255,255,.08)' },
+  };
+}
+
+function chartOptions(xLabel, yLabel) {
+  return {
+    responsive: true,
+    maintainAspectRatio: true,
+    animation: { duration: 600, easing: 'easeInOutQuart' },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#111220',
+        borderColor: 'rgba(255,255,255,.12)',
+        borderWidth: 1,
+        titleColor: '#e8dcc8',
+        bodyColor: '#a09888',
+        padding: 10,
+        titleFont: { family: 'Syne', size: 12 },
+        bodyFont:  { family: 'JetBrains Mono', size: 11 },
+      },
+    },
+    scales: {
+      x: axisStyle(xLabel),
+      y: { ...axisStyle(yLabel), min: 0, max: 1.1 },
+    },
+  };
+}
+
+// ── Plutchik Wheel (SVG) ──────────────────────────────────────
+function drawPlutchikWheel(emotionAvg, userColor) {
+  const container = document.getElementById('wheel-svg-container');
+  if (!container) return;
+
+  const vals = EMOTION_ORDER.map((_, i) => emotionAvg[i] || 0);
+  const peak = Math.max(...vals, 1e-9);
+  // normalize to [0.15, 1]
+  const norm = vals.map(v => 0.15 + 0.85 * (v / peak));
+
+  const W = 400, H = 400;
+  const cx = W / 2, cy = H / 2;
+  const maxR = 152;
+  const minR = 24;
+  const n = 8;
+  const angleStep = (Math.PI * 2) / n;
+  const gap = 0.035; // radians gap between slices
+
+  let svgInner = '';
+
+  // draw slices
+  norm.forEach((val, i) => {
+    const emotion = EMOTION_ORDER[i];
+    const eColor = EMOTION_COLORS[emotion];
+    const startAngle = i * angleStep - Math.PI / 2 - angleStep / 2 + gap;
+    const endAngle   = i * angleStep - Math.PI / 2 + angleStep / 2 - gap;
+    const r = minR + (maxR - minR) * val;
+
+    const x1 = cx + Math.cos(startAngle) * minR;
+    const y1 = cy + Math.sin(startAngle) * minR;
+    const x2 = cx + Math.cos(startAngle) * r;
+    const y2 = cy + Math.sin(startAngle) * r;
+    const x3 = cx + Math.cos(endAngle)   * r;
+    const y3 = cy + Math.sin(endAngle)   * r;
+    const x4 = cx + Math.cos(endAngle)   * minR;
+    const y4 = cy + Math.sin(endAngle)   * minR;
+
+    const gradId = `grad-${i}`;
+    const midAngle = i * angleStep - Math.PI / 2;
+    const gx1 = cx + Math.cos(midAngle) * minR;
+    const gy1 = cy + Math.sin(midAngle) * minR;
+    const gx2 = cx + Math.cos(midAngle) * maxR;
+    const gy2 = cy + Math.sin(midAngle) * maxR;
+
+    svgInner += `
+      <defs>
+        <linearGradient id="${gradId}" x1="${gx1}" y1="${gy1}" x2="${gx2}" y2="${gy2}" gradientUnits="userSpaceOnUse">
+          <stop offset="0%"   stop-color="${eColor}" stop-opacity="0.15"/>
+          <stop offset="100%" stop-color="${eColor}" stop-opacity="0.75"/>
+        </linearGradient>
+      </defs>
+      <path d="M ${x1} ${y1} L ${x2} ${y2} A ${r} ${r} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${minR} ${minR} 0 0 0 ${x1} ${y1} Z"
+            fill="url(#${gradId})"
+            stroke="${eColor}"
+            stroke-width="1"
+            stroke-opacity="0.5"
+            class="wheel-slice"
+            style="transition: opacity .2s"
+      />
+    `;
+  });
+
+  // draw concentric rings (guide lines)
+  [0.25, 0.5, 0.75, 1.0].forEach(f => {
+    const rr = minR + (maxR - minR) * f;
+    svgInner += `<circle cx="${cx}" cy="${cy}" r="${rr}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1" stroke-dasharray="3 4"/>`;
+  });
+
+  // center circle
+  svgInner += `
+    <circle cx="${cx}" cy="${cy}" r="${minR}" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    <circle cx="${cx}" cy="${cy}" r="8" fill="${userColor}" opacity="0.7"/>
+  `;
+
+  // spoke lines
+  for (let i = 0; i < n; i++) {
+    const angle = i * angleStep - Math.PI / 2;
+    const x2 = cx + Math.cos(angle) * maxR;
+    const y2 = cy + Math.sin(angle) * maxR;
+    svgInner += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
+  }
+
+  // labels
+  norm.forEach((val, i) => {
+    const emotion = EMOTION_ORDER[i];
+    const eColor = EMOTION_COLORS[emotion];
+    const angle = i * angleStep - Math.PI / 2;
+    const labelR = maxR + 22;
+    const lx = cx + Math.cos(angle) * labelR;
+    const ly = cy + Math.sin(angle) * labelR;
+    const anchor = lx < cx - 8 ? 'end' : lx > cx + 8 ? 'start' : 'middle';
+    const rawVal = (emotionAvg[i]||0).toFixed(2);
+
+    svgInner += `
+      <text x="${lx}" y="${ly - 4}" text-anchor="${anchor}"
+            font-family="Syne, sans-serif" font-size="11" font-weight="700"
+            fill="${eColor}" opacity="0.9">${emotion}</text>
+      <text x="${lx}" y="${ly + 9}" text-anchor="${anchor}"
+            font-family="JetBrains Mono, monospace" font-size="9"
+            fill="${eColor}" opacity="0.5">${rawVal}</text>
+    `;
+  });
+
+  // value dots on the wheel outline
+  const outlinePoints = norm.map((v, i) => {
+    const angle = i * angleStep - Math.PI / 2;
+    const r = minR + (maxR - minR) * v;
+    return [cx + Math.cos(angle) * r, cy + Math.sin(angle) * r];
+  });
+
+  // draw polygon connecting all tips
+  const polyPts = outlinePoints.map(([x,y]) => `${x},${y}`).join(' ');
+  svgInner += `<polygon points="${polyPts}" fill="${hexToRgba(userColor, 0.12)}" stroke="${userColor}" stroke-width="1.5" stroke-opacity="0.6"/>`;
+
+  // dots at tips
+  outlinePoints.forEach(([x, y], i) => {
+    const emotion = EMOTION_ORDER[i];
+    const eColor = EMOTION_COLORS[emotion];
+    svgInner += `<circle cx="${x}" cy="${y}" r="4" fill="${eColor}" opacity="0.85"/>`;
+  });
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"
+         style="overflow:visible;animation:fadeIn .5s ease">
+      ${svgInner}
+    </svg>
+  `;
+}
+
+// ── Conversation Modal ────────────────────────────────────────
+function openConvModal() {
+  if (!S.data) return;
+  const records  = S.data.records  || [];
+  const analysis = S.data.analysis || {};
+  const messages = analysis.messages || [];
+
+  // build a map from (speaker, index) to analysis data for enriching raw records
+  const msgMap = {};
+  messages.forEach(m => { msgMap[`${m.speaker}__${m.index}`] = m; });
+
+  const backdrop = document.getElementById('modal-backdrop');
+  const body     = document.getElementById('modal-body');
+  const meta     = document.getElementById('modal-meta');
+
+  meta.textContent = `${records.length} messages · ${S.data.filename||'uploaded file'}`;
+
+  body.innerHTML = '';
+  records.forEach((rec, idx) => {
+    const user  = rec.speaker || 'unknown';
+    const text  = rec.cleaned_message || '';
+    const ts    = rec.timestamp || '';
+    const color = getUserColor(user);
+    // find enriched message by matching speaker+roughly by index
+    const enriched = messages[idx] || {};
+    const isSarc   = enriched.is_sarcastic;
+    const isManip  = enriched.label === 'manipulative';
+
+    const item = document.createElement('div');
+    item.className = 'msg-item';
+
+    const flagsHtml = [
+      isSarc  ? '<span class="msg-flag msg-flag-sarcasm">sarcasm</span>' : '',
+      isManip ? '<span class="msg-flag msg-flag-manip">manip</span>' : '',
+    ].join('');
+
+    item.innerHTML = `
+      <div class="msg-avatar" style="background:${color}">${user[0]}</div>
+      <div class="msg-body">
+        <div class="msg-meta">
+          <span class="msg-speaker" style="color:${color}">${user}</span>
+          ${ts ? `<span class="msg-time">${ts}</span>` : ''}
+          ${flagsHtml ? `<div class="msg-flags">${flagsHtml}</div>` : ''}
+        </div>
+        <div class="msg-text">${escHtml(text)}</div>
+      </div>
+    `;
+    body.appendChild(item);
+  });
+
+  backdrop.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeConvModal(e) {
+  if (e && e.target !== document.getElementById('modal-backdrop')) return;
+  document.getElementById('modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// close modal on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeConvModal({ target: document.getElementById('modal-backdrop') });
+});
+</script>
+</body>
+</html>

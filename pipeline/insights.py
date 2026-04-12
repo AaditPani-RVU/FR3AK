@@ -7,6 +7,7 @@ import random
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 from models.emotion_model import PLUTCHIK_EMOTIONS
+from pipeline.llm_summary import generate_llm_summary
 
 
 @dataclass(frozen=True)
@@ -114,7 +115,18 @@ class InsightEngine:
             emotional_tone=emotional_tone,
         )
 
-        summary = self._build_summary(
+        llm_summary = generate_llm_summary(
+            speaker,
+            messages,
+            {
+                "dominant_emotion": dominant_emotion,
+                "emotional_tone": emotional_tone,
+                "emotional_stability": emotional_stability,
+                "sarcasm_level": sarcasm_level,
+                "manipulation_level": manipulation_level,
+            },
+        )
+        summary = llm_summary if llm_summary else self._build_summary(
             speaker=speaker,
             tone=emotional_tone,
             stability=emotional_stability,
