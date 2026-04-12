@@ -63,7 +63,12 @@ def _message_index_and_intensity(message: Mapping[str, Any], fallback_index: int
     vector_raw = message.get("emotion_vector", [])
     if isinstance(vector_raw, list):
         values = [float(v) for v in vector_raw if isinstance(v, (int, float))]
-        return index, float(sum(values))
+        if values:
+            peak = max(values)
+            mean_value = sum(values) / len(values)
+            raw_intensity = peak - mean_value
+            return index, float(raw_intensity / (peak + 1e-6))
+        return index, 0.0
 
     return index, 0.0
 

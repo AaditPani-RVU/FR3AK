@@ -204,6 +204,7 @@ class InsightEngine:
 
     @staticmethod
     def _classify_intensity(avg_emotion_intensity: float) -> str:
+        # Thresholds assume analyzer outputs normalized dominance intensity in [0, 1]-like range.
         if avg_emotion_intensity > 0.9:
             return "high emotional intensity"
         if avg_emotion_intensity >= 0.7:

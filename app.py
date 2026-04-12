@@ -355,7 +355,7 @@ def _plot_emotion_trend_for_user(messages: List[Mapping[str, Any]], speaker: str
     ax.plot(xs, ys, marker="o", linewidth=2.5, markersize=6.5, color=user_color)
     ax.set_title(f"Emotion Trend - {speaker}")
     ax.set_xlabel("Message Index")
-    ax.set_ylabel("Emotion Intensity")
+    ax.set_ylabel("Emotion Intensity (Normalized)")
     ax.set_ylim(0.0, 1.1)
     ax.grid(True, linestyle="--", alpha=0.22, color="#bca7ff")
     for spine in ax.spines.values():

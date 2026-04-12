@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
+import numpy as np
+
 from models.behavior_model import BehaviorModel
 from models.emotion_model import EmotionModel, PLUTCHIK_EMOTIONS
 
@@ -48,7 +50,9 @@ class ConversationAnalyzer:
             ]
             if len(emotion_vector) != len(PLUTCHIK_EMOTIONS):
                 emotion_vector = [0.0] * len(PLUTCHIK_EMOTIONS)
-            emotion_intensity = float(sum(emotion_vector))
+            emotion_array = np.array(emotion_vector)
+            raw_intensity = np.max(emotion_array) - np.mean(emotion_array)
+            emotion_intensity = float(raw_intensity / (np.max(emotion_array) + 1e-6))
 
             message_result = {
                 "speaker": speaker,

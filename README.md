@@ -26,6 +26,30 @@ Core capabilities include:
 - Sarcasm and manipulation detection at message and user levels.
 - Interactive Streamlit dashboard for profile and trajectory exploration.
 
+## Scoring Notes
+
+Emotion intensity in the analyzer is computed from emotion dominance, not probability mass sum.
+
+Current analyzer formula:
+
+```python
+emotion_array = np.array(emotion_vector)
+raw_intensity = np.max(emotion_array) - np.mean(emotion_array)
+emotion_intensity = float(raw_intensity / (np.max(emotion_array) + 1e-6))
+```
+
+Interpretation:
+
+- Higher dominance of one emotion gives higher intensity (typically near 0.7-1.0).
+- Flatter emotion distributions give lower intensity (typically near 0.1-0.3).
+
+Where this scoring is used:
+
+- `pipeline/analyzer.py`: computes per-message `emotion_intensity` and aggregates user-level averages.
+- `pipeline/visualizer.py`: uses `emotion_intensity` directly and applies the same dominance formula as a fallback if intensity is missing.
+- `pipeline/insights.py`: maps `avg_emotion_intensity` into low/moderate/high intensity language.
+- `app.py`: renders message-level intensity trends in the user dashboard.
+
 ## Project Structure
 
 ```text
@@ -53,12 +77,11 @@ FR3AK/
 ├── training/
 │   ├── nb1_label_part1.ipynb
 │   ├── nb2_label_part2.ipynb
-│   ├── nb3_train_model.ipy
-│   ├── nb4_eval_export.ipy
-│   ├── nb5_generate_vlits.ipy
+│   ├── nb3_train_model.ipynb
+│   ├── nb4_eval_export.ipynb
+│   ├── nb5_generate_vlits.ipynb
 │   ├── nb6_feature_extract.ipynb
 │   └── nb7_train_model2.ipynb
-
 ├── requirements.txt
 ├── .gitignore
 └── README.md
@@ -68,7 +91,7 @@ FR3AK/
 - `pipeline/`: End-to-end analysis flow (analyze -> insight -> visualization payload).
 - `utils/`: Conversation parsing utilities and sarcasm lexicon builder.
 - `tests/`: Smoke/integration scripts for pipeline components and full run validation.
-- `training`: Scripts used to preprocess data and train models.
+- `training/`: Notebooks used to preprocess data and train models.
 - `app.py`: Streamlit UI for interactive analysis and visual exploration.
 
 ## Setup Instructions
@@ -76,7 +99,7 @@ FR3AK/
 ### 1. Clone Repo
 
 ```bash
-git clone <https://github.com/AaditPani-RVU/FR3AK.git>
+git clone https://github.com/AaditPani-RVU/FR3AK.git
 cd FR3AK
 ```
 
@@ -100,7 +123,7 @@ KAGGLE_KEY=your_key
 
 ### Kaggle API Setup
 
-1. Go to https://www.kaggle.com/
+1. Go to [Kaggle](https://www.kaggle.com/)
 2. Navigate to Account Settings
 3. Click "Create New API Token"
 4. Download `kaggle.json`
@@ -118,7 +141,7 @@ Then place them in your `.env` file.
 - No manual dataset setup is required if `.env` is configured correctly.
 - The system is fully Kaggle-integrated.
 
-## Model / Data Setup
+## Model and Data Setup
 
 FR3AK supports two model artifact flows:
 
@@ -142,10 +165,10 @@ Data/model sources used by the project include Kaggle-hosted model assets and da
 Primary model data:
 
 - Behavior/sarcasm model:
-	https://www.kaggle.com/datasets/bobhendriks/incongruity-classfier
+  [incongruity-classfier](https://www.kaggle.com/datasets/bobhendriks/incongruity-classfier)
 
 - Emotion model (Plutchik-based):
-	https://www.kaggle.com/datasets/bobhendriks/plutchik-model-v2
+  [plutchik-model-v2](https://www.kaggle.com/datasets/bobhendriks/plutchik-model-v2)
 
 ## Model Training
 
@@ -237,10 +260,10 @@ Notes by task area:
 
 ## References
 
-- Kaggle: https://www.kaggle.com
-- Streamlit: https://streamlit.io
-- Matplotlib: https://matplotlib.org
-- Plutchik Emotion Wheel (theory reference): https://en.wikipedia.org/wiki/Robert_Plutchik
+- [Kaggle](https://www.kaggle.com)
+- [Streamlit](https://streamlit.io)
+- [Matplotlib](https://matplotlib.org)
+- [Plutchik Emotion Wheel (theory reference)](https://en.wikipedia.org/wiki/Robert_Plutchik)
 - Emotion AI and NLP sentiment modeling literature (general research inspiration)
 
 ## Acknowledgements
