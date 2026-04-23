@@ -59,8 +59,9 @@ def generate_llm_summary(
         f"- Emotional stability: {insight_data.get('emotional_stability', 'stable')}\n"
         f"- Sarcasm level: {insight_data.get('sarcasm_level', 'low')}\n"
         f"- Manipulation level: {insight_data.get('manipulation_level', 'low')}\n\n"
-        f"Write a professional 2\u20133 sentence behavioral summary of this participant\u2019s "
-        f"communication style. Be specific and reference patterns from the messages."
+        f"Write a professional 4\u20135 sentence behavioral summary of this participant\u2019s "
+        f"communication style. Be specific, reference patterns from the messages, and cover "
+        f"their emotional tendencies, use of sarcasm or manipulation if present, and overall tone."
     )
 
     try:
@@ -78,7 +79,7 @@ def generate_llm_summary(
                 },
                 {"role": "user", "content": user_prompt},
             ],
-            max_tokens=200,
+            max_tokens=400,
             temperature=0.4,
         )
         result = resp.choices[0].message.content

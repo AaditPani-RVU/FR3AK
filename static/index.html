@@ -3,37 +3,41 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PEAK — Conversation Analysis</title>
+<title>FR3AK — Conversation Analysis</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 /* ── Reset & Base ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:        #070810;
-  --bg1:       #0c0d18;
-  --bg2:       #111220;
-  --bg3:       #181928;
-  --amber:     #d4824a;
-  --amber-dim: #a0612e;
-  --amber-glow:rgba(212,130,74,.18);
-  --cyan:      #2dd4bf;
-  --cyan-dim:  #1a9e8e;
-  --red:       #e85460;
-  --green:     #4ade80;
-  --text:      #e8dcc8;
-  --text2:     #a09888;
-  --text3:     #5a5568;
-  --border:    rgba(255,255,255,.07);
-  --border2:   rgba(255,255,255,.12);
-  --font-head: 'Syne', sans-serif;
-  --font-body: 'Outfit', sans-serif;
+  --bg:        #FAF7F2;
+  --bg1:       #F5F0E8;
+  --bg2:       #EDE8DC;
+  --bg3:       #E4DDD0;
+  --rust:      #C4512A;
+  --rust-dim:  #9D3F1E;
+  --rust-glow: rgba(196,81,42,.14);
+  --sage:      #2E6B58;
+  --sage-dim:  #1F4D3E;
+  --red:       #C0392B;
+  --green:     #27AE60;
+  --gold:      #B8860B;
+  --text:      #2C2416;
+  --text2:     #6B5A42;
+  --text3:     #B0A28C;
+  --border:    rgba(44,36,22,.09);
+  --border2:   rgba(44,36,22,.16);
+  --font-head: 'Playfair Display', Georgia, serif;
+  --font-body: 'DM Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
-  --r:         12px;
-  --r2:        20px;
+  --r:         10px;
+  --r2:        18px;
+  --shadow-sm: 0 2px 8px rgba(44,36,22,.07), 0 1px 3px rgba(44,36,22,.05);
+  --shadow-md: 0 8px 28px rgba(44,36,22,.10), 0 2px 8px rgba(44,36,22,.06);
+  --shadow-lg: 0 20px 56px rgba(44,36,22,.14), 0 6px 16px rgba(44,36,22,.08);
 }
 
 html, body {
@@ -46,13 +50,28 @@ html, body {
   overflow-x: hidden;
 }
 
-/* subtle noise overlay */
+/* warm paper grain overlay */
 body::before {
   content: '';
   position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
   background-repeat: repeat;
-  background-size: 180px;
+  background-size: 160px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* decorative ruled lines behind content */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent,
+    transparent 39px,
+    rgba(196,81,42,.04) 39px,
+    rgba(196,81,42,.04) 40px
+  );
   pointer-events: none;
   z-index: 0;
 }
@@ -71,38 +90,37 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 36px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(7,8,16,.85);
+  padding: 16px 40px;
+  border-bottom: 1px solid var(--border2);
+  background: rgba(250,247,242,.92);
   backdrop-filter: blur(16px);
   position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 1px 0 rgba(196,81,42,.08), var(--shadow-sm);
 }
 
 .nav-logo {
   font-family: var(--font-head);
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 800;
-  letter-spacing: .12em;
-  color: var(--amber);
+  letter-spacing: .08em;
+  color: var(--rust);
   text-decoration: none;
   display: flex; align-items: center; gap: 10px;
   cursor: pointer;
 }
-.nav-logo-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 10px var(--cyan);
-  animation: pulse 2.4s ease-in-out infinite;
+.nav-logo-mark {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  background: var(--rust);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
-@keyframes pulse {
-  0%,100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: .5; transform: scale(.75); }
-}
+.nav-logo-mark svg { display: block; }
+.nav-logo-text { font-style: italic; }
 
 .nav-crumb {
   font-family: var(--font-mono);
-  font-size: .75rem;
+  font-size: .73rem;
   color: var(--text3);
   display: flex; align-items: center; gap: 8px;
 }
@@ -114,9 +132,9 @@ body::before {
 /* ── Buttons ──────────────────────────────────────────────── */
 .btn {
   font-family: var(--font-body);
-  font-size: .85rem;
+  font-size: .84rem;
   font-weight: 600;
-  letter-spacing: .04em;
+  letter-spacing: .02em;
   padding: 8px 20px;
   border-radius: var(--r);
   border: 1px solid transparent;
@@ -131,28 +149,29 @@ body::before {
   color: var(--text2);
 }
 .btn-ghost:hover {
-  border-color: var(--amber-dim);
-  color: var(--amber);
-  background: var(--amber-glow);
+  border-color: var(--rust-dim);
+  color: var(--rust);
+  background: var(--rust-glow);
 }
 .btn-primary {
-  background: var(--amber);
-  color: #0a0810;
-  border-color: var(--amber);
+  background: var(--rust);
+  color: #FAF7F2;
+  border-color: var(--rust);
+  box-shadow: var(--shadow-sm);
 }
 .btn-primary:hover {
-  background: #e09058;
+  background: var(--rust-dim);
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(212,130,74,.35);
+  box-shadow: var(--shadow-md);
 }
-.btn-cyan {
+.btn-sage {
   background: transparent;
-  border-color: var(--cyan-dim);
-  color: var(--cyan);
+  border-color: rgba(46,107,88,.35);
+  color: var(--sage);
 }
-.btn-cyan:hover {
-  background: rgba(45,212,191,.12);
-  border-color: var(--cyan);
+.btn-sage:hover {
+  background: rgba(46,107,88,.08);
+  border-color: var(--sage);
   transform: translateY(-1px);
 }
 .btn:disabled {
@@ -170,82 +189,110 @@ body::before {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 60px 24px;
+  padding: 72px 24px;
   min-height: calc(100vh - 70px);
 }
 
 .upload-hero {
   text-align: center;
-  margin-bottom: 48px;
-  animation: fadeUp .6s ease both;
+  margin-bottom: 52px;
+  animation: fadeUp .65s ease both;
 }
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(22px); }
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.hero-tag {
-  display: inline-block;
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
   font-family: var(--font-mono);
-  font-size: .7rem;
-  letter-spacing: .18em;
+  font-size: .68rem;
+  letter-spacing: .2em;
   text-transform: uppercase;
-  color: var(--cyan);
-  border: 1px solid rgba(45,212,191,.3);
-  border-radius: 999px;
-  padding: 4px 14px;
-  margin-bottom: 24px;
+  color: var(--rust);
+  margin-bottom: 20px;
+}
+.hero-eyebrow-line {
+  width: 28px; height: 1px;
+  background: var(--rust);
+  opacity: .5;
 }
 
 .hero-title {
   font-family: var(--font-head);
-  font-size: clamp(2.8rem, 7vw, 5rem);
+  font-size: clamp(2.8rem, 7vw, 5.2rem);
   font-weight: 800;
-  line-height: 1.04;
-  letter-spacing: -.01em;
+  line-height: 1.05;
+  letter-spacing: -.015em;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .hero-title em {
-  font-style: normal;
-  color: var(--amber);
+  font-style: italic;
+  color: var(--rust);
 }
 
-.hero-tagline {
-  font-family: var(--font-mono);
-  font-size: .8rem;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin: 14px 0 0;
+.hero-divider {
+  display: flex; align-items: center; gap: 16px;
+  justify-content: center;
+  margin: 18px 0;
+}
+.hero-divider-line {
+  width: 40px; height: 1px;
+  background: var(--border2);
+}
+.hero-divider-diamond {
+  width: 6px; height: 6px;
+  background: var(--rust);
+  transform: rotate(45deg);
+  opacity: .7;
 }
 
 .hero-sub {
-  font-size: 1.05rem;
+  font-size: 1rem;
   color: var(--text2);
-  max-width: 480px;
-  margin: 16px auto 0;
-  font-weight: 300;
+  max-width: 460px;
+  margin: 0 auto;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+.hero-pills {
+  display: flex; gap: 8px;
+  justify-content: center;
+  margin-top: 20px;
+}
+.hero-pill {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  color: var(--text3);
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
 /* Drop zone */
 .dropzone {
   position: relative;
   width: 100%;
-  max-width: 540px;
-  border: 1.5px dashed rgba(212,130,74,.35);
+  max-width: 520px;
+  border: 2px dashed rgba(196,81,42,.3);
   border-radius: var(--r2);
-  background: rgba(212,130,74,.04);
-  padding: 52px 36px;
+  background: rgba(245,240,232,.6);
+  padding: 52px 40px;
   text-align: center;
   cursor: pointer;
   transition: all .22s ease;
-  animation: fadeUp .6s .1s ease both;
+  animation: fadeUp .65s .12s ease both;
+  box-shadow: var(--shadow-sm);
 }
 .dropzone:hover, .dropzone.drag-over {
-  border-color: var(--amber);
-  background: rgba(212,130,74,.09);
-  box-shadow: 0 0 0 1px rgba(212,130,74,.2), 0 12px 48px rgba(212,130,74,.12);
+  border-color: var(--rust);
+  background: rgba(196,81,42,.05);
+  box-shadow: 0 0 0 4px rgba(196,81,42,.08), var(--shadow-md);
 }
 .dropzone input[type="file"] {
   position: absolute; inset: 0;
@@ -253,10 +300,10 @@ body::before {
 }
 
 .dz-icon {
-  width: 52px; height: 52px;
-  margin: 0 auto 18px;
-  color: var(--amber);
-  opacity: .8;
+  width: 48px; height: 48px;
+  margin: 0 auto 16px;
+  color: var(--rust);
+  opacity: .75;
 }
 .dz-title {
   font-family: var(--font-head);
@@ -271,48 +318,49 @@ body::before {
 }
 .dz-types {
   display: inline-flex; gap: 8px;
-  margin-top: 20px;
+  margin-top: 18px;
 }
 .dz-type {
   font-family: var(--font-mono);
-  font-size: .72rem;
+  font-size: .7rem;
   padding: 3px 10px;
   border-radius: 6px;
   border: 1px solid var(--border2);
   color: var(--text3);
+  background: var(--bg);
 }
 
 .upload-file-name {
   display: none;
-  margin-top: 18px;
+  margin-top: 16px;
   font-family: var(--font-mono);
-  font-size: .82rem;
-  color: var(--cyan);
+  font-size: .8rem;
+  color: var(--sage);
   padding: 8px 16px;
-  background: rgba(45,212,191,.08);
+  background: rgba(46,107,88,.07);
   border-radius: 8px;
-  border: 1px solid rgba(45,212,191,.2);
-  max-width: 540px;
+  border: 1px solid rgba(46,107,88,.2);
+  max-width: 520px;
   word-break: break-all;
   animation: fadeUp .3s ease both;
 }
 
 .upload-actions {
-  margin-top: 24px;
-  animation: fadeUp .6s .2s ease both;
+  margin-top: 22px;
+  animation: fadeUp .65s .22s ease both;
 }
 
 /* Progress bar */
 .progress-wrap {
   display: none;
   width: 100%;
-  max-width: 540px;
-  margin-top: 28px;
+  max-width: 520px;
+  margin-top: 26px;
   animation: fadeUp .3s ease both;
 }
 .progress-label {
   font-family: var(--font-mono);
-  font-size: .75rem;
+  font-size: .73rem;
   color: var(--text2);
   margin-bottom: 8px;
   display: flex; justify-content: space-between;
@@ -326,22 +374,16 @@ body::before {
 .progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--amber), var(--cyan));
+  background: linear-gradient(90deg, var(--rust), var(--sage));
   border-radius: 99px;
   transition: width .4s ease;
-  animation: shimmer 1.8s infinite;
-  background-size: 200% 100%;
-}
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
 }
 
 /* ── User Select View ─────────────────────────────────────── */
 .page-content {
-  max-width: 1240px;
+  max-width: 1220px;
   margin: 0 auto;
-  padding: 40px 32px;
+  padding: 44px 36px;
 }
 
 .page-header {
@@ -351,18 +393,21 @@ body::before {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
 }
 
 .page-title {
   font-family: var(--font-head);
-  font-size: 1.7rem;
+  font-size: 1.8rem;
   font-weight: 700;
   color: var(--text);
 }
 .page-desc {
-  font-size: .9rem;
-  color: var(--text2);
+  font-size: .88rem;
+  color: var(--text3);
   margin-top: 4px;
+  font-family: var(--font-mono);
 }
 
 .user-grid {
@@ -372,7 +417,7 @@ body::before {
 }
 
 .user-card {
-  background: var(--bg2);
+  background: var(--bg1);
   border: 1px solid var(--border);
   border-radius: var(--r2);
   padding: 24px;
@@ -381,20 +426,21 @@ body::before {
   position: relative;
   overflow: hidden;
   animation: fadeUp .4s ease both;
+  box-shadow: var(--shadow-sm);
 }
 .user-card::before {
   content: '';
   position: absolute;
   top: 0; left: 0;
   width: 3px; height: 100%;
-  background: var(--user-color, var(--amber));
-  opacity: .85;
+  background: var(--user-color, var(--rust));
+  border-radius: 0 2px 2px 0;
 }
 .user-card:hover {
   border-color: var(--border2);
-  background: var(--bg3);
+  background: #fff;
   transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(0,0,0,.4);
+  box-shadow: var(--shadow-lg);
 }
 
 .user-card-head {
@@ -404,12 +450,12 @@ body::before {
 .user-avatar {
   width: 40px; height: 40px;
   border-radius: 50%;
-  background: var(--user-color, var(--amber));
+  background: var(--user-color, var(--rust));
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-head);
   font-weight: 700;
   font-size: 1rem;
-  color: #070810;
+  color: #FAF7F2;
   text-transform: uppercase;
   flex-shrink: 0;
 }
@@ -423,35 +469,35 @@ body::before {
 }
 .user-msg-count {
   font-family: var(--font-mono);
-  font-size: .72rem;
+  font-size: .7rem;
   color: var(--text3);
 }
 
 .tag-row {
   display: flex; flex-wrap: wrap; gap: 6px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 .tag {
   font-family: var(--font-mono);
-  font-size: .68rem;
+  font-size: .67rem;
   font-weight: 500;
   padding: 3px 9px;
-  border-radius: 6px;
+  border-radius: 5px;
   border: 1px solid;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .05em;
 }
-.tag-tone-positive { color: #4ade80; border-color: rgba(74,222,128,.35); background: rgba(74,222,128,.08); }
-.tag-tone-negative { color: var(--red); border-color: rgba(232,84,96,.35); background: rgba(232,84,96,.08); }
-.tag-tone-mixed    { color: #fbbf24; border-color: rgba(251,191,36,.35); background: rgba(251,191,36,.08); }
-.tag-tone-dynamic  { color: var(--cyan); border-color: rgba(45,212,191,.35); background: rgba(45,212,191,.08); }
-.tag-neutral { color: var(--text2); border-color: var(--border2); background: rgba(255,255,255,.04); }
-.tag-risk    { color: var(--red); border-color: rgba(232,84,96,.35); background: rgba(232,84,96,.08); }
+.tag-tone-positive { color: #1A6B3C; border-color: rgba(26,107,60,.3); background: rgba(26,107,60,.08); }
+.tag-tone-negative { color: var(--red); border-color: rgba(192,57,43,.3); background: rgba(192,57,43,.07); }
+.tag-tone-mixed    { color: #8B6914; border-color: rgba(139,105,20,.3); background: rgba(139,105,20,.08); }
+.tag-tone-dynamic  { color: var(--sage); border-color: rgba(46,107,88,.3); background: rgba(46,107,88,.08); }
+.tag-neutral { color: var(--text2); border-color: var(--border2); background: var(--bg2); }
+.tag-risk    { color: var(--red); border-color: rgba(192,57,43,.3); background: rgba(192,57,43,.07); }
 
 .user-summary-short {
   font-size: .82rem;
   color: var(--text2);
-  line-height: 1.5;
+  line-height: 1.55;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -461,7 +507,7 @@ body::before {
 /* ── Analysis View ────────────────────────────────────────── */
 .analysis-layout {
   display: grid;
-  grid-template-columns: 1fr 460px;
+  grid-template-columns: 1fr 440px;
   gap: 24px;
   align-items: start;
 }
@@ -474,38 +520,47 @@ body::before {
 
 /* Profile card */
 .profile-card {
-  background: var(--bg2);
+  background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--r2);
-  padding: 28px;
+  padding: 30px;
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.profile-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--user-color, var(--rust));
 }
 .profile-card::after {
   content: '';
   position: absolute;
-  top: -40px; right: -40px;
-  width: 180px; height: 180px;
+  top: -60px; right: -60px;
+  width: 220px; height: 220px;
   border-radius: 50%;
-  background: var(--user-color-a, rgba(212,130,74,.08));
+  background: var(--user-color-a, rgba(196,81,42,.06));
   pointer-events: none;
 }
 
 .profile-head {
-  display: flex; align-items: center; gap: 16px;
-  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 18px;
+  margin-bottom: 22px;
 }
 .profile-avatar {
-  width: 56px; height: 56px;
+  width: 58px; height: 58px;
   border-radius: 50%;
-  background: var(--user-color, var(--amber));
+  background: var(--user-color, var(--rust));
   display: flex; align-items: center; justify-content: center;
   font-family: var(--font-head);
   font-weight: 800;
-  font-size: 1.4rem;
-  color: #070810;
+  font-size: 1.5rem;
+  color: #FAF7F2;
   text-transform: uppercase;
   flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(44,36,22,.15);
 }
 .profile-name-wrap {}
 .profile-name {
@@ -517,9 +572,9 @@ body::before {
 }
 .profile-dominant {
   font-family: var(--font-mono);
-  font-size: .72rem;
+  font-size: .7rem;
   color: var(--text3);
-  margin-top: 2px;
+  margin-top: 3px;
   text-transform: uppercase;
   letter-spacing: .1em;
 }
@@ -527,34 +582,37 @@ body::before {
 .profile-summary {
   font-size: .9rem;
   color: var(--text2);
-  line-height: 1.65;
-  margin-bottom: 20px;
-  padding-left: 16px;
-  border-left: 2px solid var(--user-color, var(--amber));
+  line-height: 1.7;
+  margin-bottom: 22px;
+  padding: 14px 18px;
+  background: var(--bg1);
+  border-radius: var(--r);
+  border-left: 3px solid var(--user-color, var(--rust));
+  font-style: italic;
 }
 
 .stats-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 .stat-box {
-  background: var(--bg3);
+  background: var(--bg1);
   border: 1px solid var(--border);
   border-radius: var(--r);
-  padding: 12px 14px;
+  padding: 12px 10px;
   text-align: center;
 }
 .stat-val {
   font-family: var(--font-head);
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text);
   text-transform: capitalize;
 }
 .stat-key {
   font-family: var(--font-mono);
-  font-size: .65rem;
+  font-size: .63rem;
   color: var(--text3);
   text-transform: uppercase;
   letter-spacing: .08em;
@@ -563,10 +621,11 @@ body::before {
 
 /* chart card */
 .chart-card {
-  background: var(--bg2);
+  background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--r2);
   padding: 24px;
+  box-shadow: var(--shadow-sm);
 }
 .card-title {
   font-family: var(--font-head);
@@ -574,24 +633,27 @@ body::before {
   font-weight: 700;
   color: var(--text);
   margin-bottom: 18px;
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
 }
 .card-title-dot {
-  width: 7px; height: 7px;
+  width: 8px; height: 8px;
   border-radius: 50%;
-  background: var(--user-color, var(--amber));
-  box-shadow: 0 0 8px var(--user-color, var(--amber));
+  background: var(--user-color, var(--rust));
+  flex-shrink: 0;
 }
 
 /* Plutchik wheel card */
 .wheel-card {
-  background: var(--bg2);
+  background: #fff;
   border: 1px solid var(--border);
   border-radius: var(--r2);
   padding: 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-shadow: var(--shadow-sm);
 }
 .wheel-title {
   font-family: var(--font-head);
@@ -600,7 +662,7 @@ body::before {
   color: var(--text);
   margin-bottom: 22px;
   text-align: center;
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 10px;
 }
 #wheel-svg-container {
   width: 100%;
@@ -622,8 +684,8 @@ body::before {
 .modal-backdrop {
   display: none;
   position: fixed; inset: 0;
-  background: rgba(7,8,16,.88);
-  backdrop-filter: blur(8px);
+  background: rgba(44,36,22,.35);
+  backdrop-filter: blur(6px);
   z-index: 200;
   animation: fadeIn .2s ease;
 }
@@ -631,48 +693,53 @@ body::before {
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
-  background: var(--bg1);
+  background: var(--bg);
   border: 1px solid var(--border2);
   border-radius: var(--r2);
   width: 90%; max-width: 680px;
   max-height: 82vh;
   display: flex; flex-direction: column;
   animation: slideUp .25s ease;
-  box-shadow: 0 32px 80px rgba(0,0,0,.6);
+  box-shadow: var(--shadow-lg);
 }
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(24px); }
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 20px 24px;
+  padding: 20px 26px;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  background: #fff;
+  border-radius: var(--r2) var(--r2) 0 0;
 }
 .modal-title {
   font-family: var(--font-head);
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
 }
 .modal-meta {
   font-family: var(--font-mono);
-  font-size: .72rem;
+  font-size: .7rem;
   color: var(--text3);
   margin-top: 2px;
 }
 .modal-close {
   background: none; border: none;
   color: var(--text3); cursor: pointer;
-  font-size: 1.4rem; line-height: 1;
+  font-size: 1.3rem; line-height: 1;
   padding: 4px;
   transition: color .15s;
+  border-radius: 6px;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
 }
-.modal-close:hover { color: var(--text); }
+.modal-close:hover { color: var(--text); background: var(--bg2); }
 .modal-body {
   overflow-y: auto;
-  padding: 16px 24px;
+  padding: 16px 26px;
   flex: 1;
   scrollbar-width: thin;
   scrollbar-color: var(--bg3) transparent;
@@ -681,7 +748,7 @@ body::before {
 .msg-item {
   display: flex;
   gap: 12px;
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--border);
 }
 .msg-item:last-child { border-bottom: none; }
@@ -692,25 +759,25 @@ body::before {
   font-family: var(--font-head);
   font-size: .7rem;
   font-weight: 700;
-  color: #070810;
+  color: #FAF7F2;
   text-transform: uppercase;
   margin-top: 2px;
 }
 .msg-body {}
 .msg-meta {
   display: flex; align-items: center; gap: 10px;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 .msg-speaker {
   font-family: var(--font-head);
-  font-size: .8rem;
+  font-size: .82rem;
   font-weight: 700;
   color: var(--text);
   text-transform: capitalize;
 }
 .msg-time {
   font-family: var(--font-mono);
-  font-size: .68rem;
+  font-size: .67rem;
   color: var(--text3);
 }
 .msg-flags {
@@ -725,12 +792,12 @@ body::before {
   text-transform: uppercase;
   letter-spacing: .05em;
 }
-.msg-flag-sarcasm  { color: #fbbf24; background: rgba(251,191,36,.12); border: 1px solid rgba(251,191,36,.25); }
-.msg-flag-manip    { color: var(--red); background: rgba(232,84,96,.1); border: 1px solid rgba(232,84,96,.25); }
+.msg-flag-sarcasm  { color: #8B6914; background: rgba(139,105,20,.1); border: 1px solid rgba(139,105,20,.25); }
+.msg-flag-manip    { color: var(--red); background: rgba(192,57,43,.08); border: 1px solid rgba(192,57,43,.22); }
 .msg-text {
-  font-size: .88rem;
+  font-size: .87rem;
   color: var(--text2);
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 /* ── Scrollbar ────────────────────────────────────────────── */
@@ -742,13 +809,13 @@ body::before {
 .toast {
   position: fixed;
   bottom: 28px; right: 28px;
-  background: var(--bg3);
+  background: var(--bg1);
   border: 1px solid var(--border2);
   border-radius: var(--r);
   padding: 12px 20px;
-  font-size: .85rem;
+  font-size: .84rem;
   color: var(--text);
-  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  box-shadow: var(--shadow-lg);
   z-index: 999;
   transform: translateY(10px);
   opacity: 0;
@@ -756,7 +823,7 @@ body::before {
   pointer-events: none;
 }
 .toast.show { transform: translateY(0); opacity: 1; }
-.toast.error { border-color: rgba(232,84,96,.4); color: var(--red); }
+.toast.error { border-color: rgba(192,57,43,.35); color: var(--red); background: rgba(192,57,43,.05); }
 
 /* ── Utility ──────────────────────────────────────────────── */
 .flex-center { display: flex; align-items: center; }
@@ -771,7 +838,13 @@ body::before {
 <!-- ═══ NAV ═══════════════════════════════════════════════════ -->
 <nav class="nav">
   <div class="nav-logo" onclick="goHome()">
-    <div class="nav-logo-dot"></div>
+    <div class="nav-logo-mark">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M3 13L8 3L13 13" stroke="#FAF7F2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 10H11" stroke="#FAF7F2" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="nav-logo-text">FR3AK</span>
   </div>
   <div class="nav-crumb" id="nav-crumb"></div>
   <div class="nav-actions" id="nav-actions"></div>
@@ -780,13 +853,26 @@ body::before {
 <!-- ═══ UPLOAD VIEW ════════════════════════════════════════════ -->
 <div id="view-upload" class="view active upload-view">
   <div class="upload-hero">
-    <div class="hero-tag">Conversation Forensics Engine</div>
+    <div class="hero-eyebrow">
+      <span class="hero-eyebrow-line"></span>
+      Conversation Forensics Engine
+      <span class="hero-eyebrow-line"></span>
+    </div>
     <h1 class="hero-title">
       Functional Reasoning &amp;<br/>
       <em>Emotional Analysis</em>
     </h1>
-    <p class="hero-tagline">Emotion &bull; Behavior &bull; Insight</p>
+    <div class="hero-divider">
+      <span class="hero-divider-line"></span>
+      <span class="hero-divider-diamond"></span>
+      <span class="hero-divider-line"></span>
+    </div>
     <p class="hero-sub">Upload a conversation export to generate user profiles, emotional trends, and behavior signals.</p>
+    <div class="hero-pills">
+      <span class="hero-pill">Emotion</span>
+      <span class="hero-pill">Behavior</span>
+      <span class="hero-pill">Insight</span>
+    </div>
   </div>
 
   <div class="dropzone" id="dropzone">
@@ -808,7 +894,7 @@ body::before {
 
   <div class="upload-actions">
     <button class="btn btn-primary" id="btn-run" disabled onclick="runPipeline()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       Run FR3AK Pipeline
     </button>
   </div>
@@ -830,7 +916,7 @@ body::before {
         <div class="page-title">Select a participant</div>
         <div class="page-desc" id="users-file-desc"></div>
       </div>
-      <button class="btn btn-cyan" onclick="openConvModal()">
+      <button class="btn btn-sage" onclick="openConvModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         View Conversation
       </button>
@@ -872,24 +958,24 @@ body::before {
 // ── State ─────────────────────────────────────────────────────
 const S = {
   file: null,
-  data: null,       // full API response
+  data: null,
   userColors: {},
-  charts: {},       // Chart.js instances keyed by canvas id
+  charts: {},
 };
 
 const PALETTE = [
-  '#d4824a','#2dd4bf','#a78bfa','#f472b6','#60a5fa','#34d399','#fb923c','#e879f9'
+  '#C4512A','#2E6B58','#8B4A9C','#1A6B7A','#B8860B','#A0522D','#5B7FA6','#7A6B3A'
 ];
 
 const EMOTION_COLORS = {
-  joy:          '#FFD700',
-  trust:        '#77DD77',
-  fear:         '#20B2AA',
-  surprise:     '#87CEEB',
-  sadness:      '#4169E1',
-  disgust:      '#9370DB',
-  anger:        '#FF4500',
-  anticipation: '#FF8C00',
+  joy:          '#E8A800',
+  trust:        '#3A8C5C',
+  fear:         '#2A7A6A',
+  surprise:     '#5B8FB9',
+  sadness:      '#4060A0',
+  disgust:      '#7A4A9C',
+  anger:        '#C43020',
+  anticipation: '#C07020',
 };
 const EMOTION_ORDER = ['joy','trust','fear','surprise','sadness','disgust','anger','anticipation'];
 
@@ -938,10 +1024,10 @@ function updateNav(page, extra = '') {
     crumb.innerHTML = `<span>Home</span><span class="sep">/</span><span>Participants</span>`;
     actions.innerHTML = `<button class="btn btn-ghost" onclick="goHome()">← New file</button>`;
   } else if (page === 'analysis') {
-    crumb.innerHTML = `<span onclick="showView('view-users');updateNav('users')" style="cursor:pointer">Participants</span><span class="sep">/</span><span style="color:var(--amber)">${extra}</span>`;
+    crumb.innerHTML = `<span onclick="showView('view-users');updateNav('users')" style="cursor:pointer">Participants</span><span class="sep">/</span><span style="color:var(--rust)">${extra}</span>`;
     actions.innerHTML = `
       <button class="btn btn-ghost" onclick="showView('view-users');updateNav('users')">← All users</button>
-      <button class="btn btn-cyan" onclick="openConvModal()">
+      <button class="btn btn-sage" onclick="openConvModal()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         View Conversation
       </button>`;
@@ -1031,7 +1117,6 @@ function renderUsers() {
   const users = Object.keys(insights);
   if (!users.length) { showToast('No users found in data.', true); return; }
 
-  // pre-assign colors
   users.forEach(u => getUserColor(u));
 
   const grid = document.getElementById('user-grid');
@@ -1093,19 +1178,17 @@ function renderAnalysis(user) {
   const color     = getUserColor(user);
   const emotionAvg = userStats.emotion_avg || new Array(8).fill(0);
 
-  // destroy old charts
   Object.values(S.charts).forEach(c => c.destroy());
   S.charts = {};
 
-  // ── LEFT: profile + charts ───────────────────────────────
+  // ── LEFT ────────────────────────────────────────────────────
   const left = document.getElementById('analysis-left');
   left.innerHTML = '';
 
-  // profile card
   const profileCard = document.createElement('div');
   profileCard.className = 'profile-card';
   profileCard.style.setProperty('--user-color', color);
-  profileCard.style.setProperty('--user-color-a', hexToRgba(color, 0.08));
+  profileCard.style.setProperty('--user-color-a', hexToRgba(color, 0.06));
 
   const tone = profile.emotional_tone || 'mixed';
   const toneClass = 'tag-tone-' + tone;
@@ -1138,7 +1221,6 @@ function renderAnalysis(user) {
   `;
   left.appendChild(profileCard);
 
-  // emotion trend chart
   left.appendChild(buildChartCard(
     'Emotion Intensity Over Time',
     color,
@@ -1154,8 +1236,8 @@ function renderAnalysis(user) {
             label: 'Emotion Intensity',
             data: ys,
             borderColor: color,
-            backgroundColor: hexToRgba(color, 0.08),
-            borderWidth: 2.2,
+            backgroundColor: hexToRgba(color, 0.07),
+            borderWidth: 2,
             pointBackgroundColor: color,
             pointRadius: 4,
             pointHoverRadius: 6,
@@ -1168,10 +1250,9 @@ function renderAnalysis(user) {
     }
   ));
 
-  // sarcasm timeline
   left.appendChild(buildChartCard(
     'Sarcasm Detection Timeline',
-    '#fbbf24',
+    '#B8860B',
     'sarcasm-chart',
     (ctx) => {
       const xs = messages.map(m => m.index);
@@ -1182,7 +1263,7 @@ function renderAnalysis(user) {
           datasets: [{
             label: 'Sarcastic',
             data: xs.map((x,i) => ({ x, y: ys[i] })),
-            backgroundColor: xs.map((_,i) => ys[i] ? '#fbbf24' : hexToRgba(color, 0.25)),
+            backgroundColor: xs.map((_,i) => ys[i] ? '#B8860B' : hexToRgba(color, 0.2)),
             pointRadius: xs.map((_,i) => ys[i] ? 7 : 4),
             pointHoverRadius: 9,
           }]
@@ -1190,18 +1271,17 @@ function renderAnalysis(user) {
         options: {
           ...chartOptions('Message Index', ''),
           scales: {
-            x: { ...axisStyle('Message Index'), grid: { color: 'rgba(255,255,255,.05)' } },
-            y: { ...axisStyle(''), min: -0.2, max: 1.4, ticks: { callback: v => v===1?'Yes':v===0?'No':'', color: '#5a5568', font: { family:'JetBrains Mono', size:11 } }, grid: { color: 'rgba(255,255,255,.05)' } }
+            x: { ...axisStyle('Message Index'), grid: { color: 'rgba(44,36,22,.06)' } },
+            y: { ...axisStyle(''), min: -0.2, max: 1.4, ticks: { callback: v => v===1?'Yes':v===0?'No':'', color: '#B0A28C', font: { family:'JetBrains Mono', size:11 } }, grid: { color: 'rgba(44,36,22,.06)' } }
           }
         },
       });
     }
   ));
 
-  // manipulation timeline
   left.appendChild(buildChartCard(
     'Manipulation Detection Timeline',
-    '#e85460',
+    '#C0392B',
     'manip-chart',
     (ctx) => {
       const xs = messages.map(m => m.index);
@@ -1212,7 +1292,7 @@ function renderAnalysis(user) {
           datasets: [{
             label: 'Manipulative',
             data: xs.map((x,i) => ({ x, y: ys[i] })),
-            backgroundColor: xs.map((_,i) => ys[i] ? '#e85460' : hexToRgba(color, 0.25)),
+            backgroundColor: xs.map((_,i) => ys[i] ? '#C0392B' : hexToRgba(color, 0.2)),
             pointRadius: xs.map((_,i) => ys[i] ? 7 : 4),
             pointHoverRadius: 9,
           }]
@@ -1220,15 +1300,15 @@ function renderAnalysis(user) {
         options: {
           ...chartOptions('Message Index', ''),
           scales: {
-            x: { ...axisStyle('Message Index'), grid: { color: 'rgba(255,255,255,.05)' } },
-            y: { ...axisStyle(''), min: -0.2, max: 1.4, ticks: { callback: v => v===1?'Yes':v===0?'No':'', color: '#5a5568', font: { family:'JetBrains Mono', size:11 } }, grid: { color: 'rgba(255,255,255,.05)' } }
+            x: { ...axisStyle('Message Index'), grid: { color: 'rgba(44,36,22,.06)' } },
+            y: { ...axisStyle(''), min: -0.2, max: 1.4, ticks: { callback: v => v===1?'Yes':v===0?'No':'', color: '#B0A28C', font: { family:'JetBrains Mono', size:11 } }, grid: { color: 'rgba(44,36,22,.06)' } }
           }
         },
       });
     }
   ));
 
-  // ── RIGHT: plutchik wheel ────────────────────────────────
+  // ── RIGHT ───────────────────────────────────────────────────
   const right = document.getElementById('analysis-right');
   right.innerHTML = '';
 
@@ -1236,20 +1316,18 @@ function renderAnalysis(user) {
   wheelCard.className = 'wheel-card';
   wheelCard.innerHTML = `
     <div class="wheel-title">
-      <div class="card-title-dot" style="background:${color};box-shadow:0 0 8px ${color}"></div>
+      <div class="card-title-dot" style="background:${color}"></div>
       Emotion Signature
     </div>
     <div id="wheel-svg-container"></div>
   `;
   right.appendChild(wheelCard);
-  // show the view first so canvases have real dimensions
+
   showView('view-analysis');
   updateNav('analysis', user);
 
-  // render wheel (SVG — works regardless of layout timing)
   drawPlutchikWheel(emotionAvg, color);
 
-  // render Chart.js charts after layout pass
   setTimeout(() => {
     left.querySelectorAll('[data-chart]').forEach(card => {
       if (card._renderChart && card._canvasId) {
@@ -1267,12 +1345,11 @@ function buildChartCard(title, dotColor, canvasId, renderFn) {
   card.dataset.chart = canvasId;
   card.innerHTML = `
     <div class="card-title">
-      <div class="card-title-dot" style="background:${dotColor};box-shadow:0 0 8px ${hexToRgba(dotColor,0.6)}"></div>
+      <div class="card-title-dot" style="background:${dotColor}"></div>
       ${title}
     </div>
     <canvas id="${canvasId}" height="140"></canvas>
   `;
-  // renderFn is called by renderAnalysis after the view is shown
   card._renderChart = renderFn;
   card._canvasId    = canvasId;
   return card;
@@ -1280,10 +1357,10 @@ function buildChartCard(title, dotColor, canvasId, renderFn) {
 
 function axisStyle(label) {
   return {
-    title: { display: !!label, text: label, color: '#5a5568', font: { family:'Outfit', size:11 } },
-    ticks: { color: '#5a5568', font: { family:'JetBrains Mono', size:11 } },
-    grid:  { color: 'rgba(255,255,255,.05)' },
-    border:{ color: 'rgba(255,255,255,.08)' },
+    title: { display: !!label, text: label, color: '#B0A28C', font: { family:'DM Sans', size:11 } },
+    ticks: { color: '#B0A28C', font: { family:'JetBrains Mono', size:11 } },
+    grid:  { color: 'rgba(44,36,22,.06)' },
+    border:{ color: 'rgba(44,36,22,.1)' },
   };
 }
 
@@ -1295,14 +1372,15 @@ function chartOptions(xLabel, yLabel) {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#111220',
-        borderColor: 'rgba(255,255,255,.12)',
+        backgroundColor: '#fff',
+        borderColor: 'rgba(44,36,22,.15)',
         borderWidth: 1,
-        titleColor: '#e8dcc8',
-        bodyColor: '#a09888',
+        titleColor: '#2C2416',
+        bodyColor: '#6B5A42',
         padding: 10,
-        titleFont: { family: 'Syne', size: 12 },
+        titleFont: { family: 'Playfair Display', size: 12 },
         bodyFont:  { family: 'JetBrains Mono', size: 11 },
+        boxShadow: '0 4px 12px rgba(44,36,22,.1)',
       },
     },
     scales: {
@@ -1319,7 +1397,6 @@ function drawPlutchikWheel(emotionAvg, userColor) {
 
   const vals = EMOTION_ORDER.map((_, i) => emotionAvg[i] || 0);
   const peak = Math.max(...vals, 1e-9);
-  // normalize to [0.15, 1]
   const norm = vals.map(v => 0.15 + 0.85 * (v / peak));
 
   const W = 400, H = 400;
@@ -1328,11 +1405,10 @@ function drawPlutchikWheel(emotionAvg, userColor) {
   const minR = 24;
   const n = 8;
   const angleStep = (Math.PI * 2) / n;
-  const gap = 0.035; // radians gap between slices
+  const gap = 0.035;
 
   let svgInner = '';
 
-  // draw slices
   norm.forEach((val, i) => {
     const emotion = EMOTION_ORDER[i];
     const eColor = EMOTION_COLORS[emotion];
@@ -1359,42 +1435,36 @@ function drawPlutchikWheel(emotionAvg, userColor) {
     svgInner += `
       <defs>
         <linearGradient id="${gradId}" x1="${gx1}" y1="${gy1}" x2="${gx2}" y2="${gy2}" gradientUnits="userSpaceOnUse">
-          <stop offset="0%"   stop-color="${eColor}" stop-opacity="0.15"/>
-          <stop offset="100%" stop-color="${eColor}" stop-opacity="0.75"/>
+          <stop offset="0%"   stop-color="${eColor}" stop-opacity="0.12"/>
+          <stop offset="100%" stop-color="${eColor}" stop-opacity="0.65"/>
         </linearGradient>
       </defs>
       <path d="M ${x1} ${y1} L ${x2} ${y2} A ${r} ${r} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${minR} ${minR} 0 0 0 ${x1} ${y1} Z"
             fill="url(#${gradId})"
             stroke="${eColor}"
             stroke-width="1"
-            stroke-opacity="0.5"
-            class="wheel-slice"
-            style="transition: opacity .2s"
+            stroke-opacity="0.45"
       />
     `;
   });
 
-  // draw concentric rings (guide lines)
   [0.25, 0.5, 0.75, 1.0].forEach(f => {
     const rr = minR + (maxR - minR) * f;
-    svgInner += `<circle cx="${cx}" cy="${cy}" r="${rr}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1" stroke-dasharray="3 4"/>`;
+    svgInner += `<circle cx="${cx}" cy="${cy}" r="${rr}" fill="none" stroke="rgba(44,36,22,0.07)" stroke-width="1" stroke-dasharray="3 4"/>`;
   });
 
-  // center circle
   svgInner += `
-    <circle cx="${cx}" cy="${cy}" r="${minR}" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
-    <circle cx="${cx}" cy="${cy}" r="8" fill="${userColor}" opacity="0.7"/>
+    <circle cx="${cx}" cy="${cy}" r="${minR}" fill="rgba(250,247,242,0.8)" stroke="rgba(44,36,22,0.1)" stroke-width="1"/>
+    <circle cx="${cx}" cy="${cy}" r="7" fill="${userColor}" opacity="0.8"/>
   `;
 
-  // spoke lines
   for (let i = 0; i < n; i++) {
     const angle = i * angleStep - Math.PI / 2;
     const x2 = cx + Math.cos(angle) * maxR;
     const y2 = cy + Math.sin(angle) * maxR;
-    svgInner += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`;
+    svgInner += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="rgba(44,36,22,0.06)" stroke-width="1"/>`;
   }
 
-  // labels
   norm.forEach((val, i) => {
     const emotion = EMOTION_ORDER[i];
     const eColor = EMOTION_COLORS[emotion];
@@ -1407,26 +1477,23 @@ function drawPlutchikWheel(emotionAvg, userColor) {
 
     svgInner += `
       <text x="${lx}" y="${ly - 4}" text-anchor="${anchor}"
-            font-family="Syne, sans-serif" font-size="11" font-weight="700"
+            font-family="Playfair Display, serif" font-size="11" font-weight="700"
             fill="${eColor}" opacity="0.9">${emotion}</text>
       <text x="${lx}" y="${ly + 9}" text-anchor="${anchor}"
             font-family="JetBrains Mono, monospace" font-size="9"
-            fill="${eColor}" opacity="0.5">${rawVal}</text>
+            fill="${eColor}" opacity="0.55">${rawVal}</text>
     `;
   });
 
-  // value dots on the wheel outline
   const outlinePoints = norm.map((v, i) => {
     const angle = i * angleStep - Math.PI / 2;
     const r = minR + (maxR - minR) * v;
     return [cx + Math.cos(angle) * r, cy + Math.sin(angle) * r];
   });
 
-  // draw polygon connecting all tips
   const polyPts = outlinePoints.map(([x,y]) => `${x},${y}`).join(' ');
-  svgInner += `<polygon points="${polyPts}" fill="${hexToRgba(userColor, 0.12)}" stroke="${userColor}" stroke-width="1.5" stroke-opacity="0.6"/>`;
+  svgInner += `<polygon points="${polyPts}" fill="${hexToRgba(userColor, 0.1)}" stroke="${userColor}" stroke-width="1.5" stroke-opacity="0.55"/>`;
 
-  // dots at tips
   outlinePoints.forEach(([x, y], i) => {
     const emotion = EMOTION_ORDER[i];
     const eColor = EMOTION_COLORS[emotion];
@@ -1448,7 +1515,6 @@ function openConvModal() {
   const analysis = S.data.analysis || {};
   const messages = analysis.messages || [];
 
-  // build a map from (speaker, index) to analysis data for enriching raw records
   const msgMap = {};
   messages.forEach(m => { msgMap[`${m.speaker}__${m.index}`] = m; });
 
@@ -1464,7 +1530,6 @@ function openConvModal() {
     const text  = rec.cleaned_message || '';
     const ts    = rec.timestamp || '';
     const color = getUserColor(user);
-    // find enriched message by matching speaker+roughly by index
     const enriched = messages[idx] || {};
     const isSarc   = enriched.is_sarcastic;
     const isManip  = enriched.label === 'manipulative';
@@ -1505,7 +1570,6 @@ function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// close modal on Escape
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeConvModal({ target: document.getElementById('modal-backdrop') });
 });
