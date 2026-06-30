@@ -1,26 +1,32 @@
 from __future__ import annotations
 
+import logging
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(Path(__file__).parent.parent / ".env")
+
+logger = logging.getLogger(__name__)
 
 _client = None
 
 
 def _get_client():
-    """Return a cached OpenAI client, or None if no API key is configured."""
+    """Return a cached Groq client, or None if no API key is configured."""
     global _client
     if _client is None:
-        key = os.getenv("OPENAI_API_KEY", "").strip()
+        key = os.getenv("GROQ_API_KEY", "").strip()
         if not key:
+            logger.warning("LLM summary disabled: GROQ_API_KEY not set")
             return None
         try:
-            from openai import OpenAI
-            _client = OpenAI(api_key=key)
+            from groq import Groq
+            _client = Groq(api_key=key)
         except ImportError:
+            logger.warning("LLM summary disabled: 'groq' package not installed — run: pip install groq")
             return None
     return _client
 
@@ -30,7 +36,7 @@ def generate_llm_summary(
     messages: List[Dict[str, Any]],
     insight_data: Dict[str, Any],
 ) -> Optional[str]:
-    """Return a GPT-4o-mini summary for a single speaker, or None on failure/no key."""
+    """Return a Groq LLM summary for a single speaker, or None on failure/no key."""
     client = _get_client()
     if client is None:
         return None
@@ -66,7 +72,7 @@ def generate_llm_summary(
 
     try:
         resp = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="llama-3.1-8b-instant",
             messages=[
                 {
                     "role": "system",
@@ -84,5 +90,6 @@ def generate_llm_summary(
         )
         result = resp.choices[0].message.content
         return result.strip() if result else None
-    except Exception:
+    except Exception as exc:
+        logger.warning("LLM summary failed for %s: %s", speaker, exc, exc_info=True)
         return None

@@ -215,7 +215,6 @@ class EmotionModel:
                     "--unzip"
                 ],
                 check=True,
-                shell=True  # REQUIRED for Windows
             )
         except subprocess.CalledProcessError as e:
             raise RuntimeError(

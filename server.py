@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Tuple
@@ -10,6 +11,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import warnings
 warnings.filterwarnings("ignore")
+
+logging.basicConfig(level=logging.WARNING, format="%(name)s: %(message)s")
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
