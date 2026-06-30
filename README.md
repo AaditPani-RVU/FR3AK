@@ -4,7 +4,7 @@ Emotion • Behavior • Insight
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Server-009688?logo=fastapi&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o--mini-412991?logo=openai&logoColor=white)
+![Groq](https://img.shields.io/badge/Groq-gpt--oss--20B-F55036?logo=groq&logoColor=white)
 ![Kaggle](https://img.shields.io/badge/Kaggle-Datasets-20BEFF?logo=kaggle&logoColor=white)
 ![PyTorch](https://img.shields.io/badge/PyTorch-Inference-EE4C2C?logo=pytorch&logoColor=white)
 
@@ -18,7 +18,7 @@ Core capabilities:
 - Sarcasm detection from lexical, contextual, and rule-based signals.
 - Manipulation detection through a staged behavioral classifier.
 - Per-participant behavioral profiling with risk flags and stability analysis.
-- LLM-generated summaries (GPT-4o-mini) grounded in model outputs, with template fallback.
+- LLM-generated summaries (gpt-oss-20B served via Groq) grounded in model outputs, with template fallback.
 - Interactive web dashboard: Plutchik wheel, emotion trend, sarcasm and manipulation timelines, full conversation viewer.
 
 ---
@@ -38,7 +38,7 @@ Core capabilities:
 │   ├── analyzer.py                  # ConversationAnalyzer — per-message & user aggregation
 │   ├── insights.py                  # InsightEngine — profiling & behavioral interpretation
 │   ├── visualizer.py                # Visualization payload builder
-│   └── llm_summary.py               # GPT-4o-mini summary generation with template fallback
+│   └── llm_summary.py               # gpt-oss-20B (via Groq) summary generation with template fallback
 ├── utils/
 │   ├── parser.py                    # Conversation file parser (.txt / .json)
 │   └── build_sarcasm_lexicon.py     # Sarcasm lexicon generator (utility, run once)
@@ -90,7 +90,7 @@ Install the required Python packages using pip:
 pip install -r requirements.txt
 ```
 
-This installs FastAPI for the web server, PyTorch and Transformers for model inference, OpenAI SDK for LLM summaries, and other dependencies like NumPy, pandas, and scikit-learn.
+This installs FastAPI for the web server, PyTorch and Transformers for model inference, the Groq SDK for LLM summaries (gpt-oss-20B), and other dependencies like NumPy, pandas, and scikit-learn.
 
 ### 3. Obtain Kaggle API Credentials
 
@@ -115,13 +115,13 @@ KAGGLE_KEY=your_key
 FR3AK_EMOTION_DATASET_REF=bobhendriks/plutchik-model-v2
 FR3AK_BEHAVIOR_DATASET_REF=bobhendriks/incongruity-classfier
 
-# Optional — enables LLM-powered summaries via GPT-4o-mini
-OPENAI_API_KEY=
+# Optional — enables LLM-powered summaries via gpt-oss-20B on Groq
+GROQ_API_KEY=
 ```
 
 - Replace `your_username` and `your_key` with values from your `kaggle.json`.
 - The dataset references are fixed and should not be changed.
-- If `OPENAI_API_KEY` is omitted, summaries use deterministic templates instead of GPT-4o-mini.
+- If `GROQ_API_KEY` is omitted, summaries use deterministic templates instead of gpt-oss-20B.
 
 The app will automatically download model artifacts to `data/` on first run if not present.
 
@@ -197,16 +197,16 @@ Converts raw frequencies into interpretable labels per participant:
 | `sarcasm_level`       | frequency threshold → low / medium / high                                                                                                |
 | `manipulation_level`  | frequency threshold + 16 consistency checks (stabilizer detection, neutral protection, task-oriented dampening, frustration vs coercion) |
 | `risk_flags`          | active if any of: high manipulation, high sarcasm, emotional volatility, persistent negative affect                                      |
-| `summary`             | GPT-4o-mini if key set, otherwise deterministic template                                                                                 |
+| `summary`             | gpt-oss-20B (via Groq) if key set, otherwise deterministic template                                                                      |
 
 ### Stage 3 — LLM Summary (`pipeline/llm_summary.py`)
 
-Called from `InsightEngine` per participant after all labels are finalized. Passes GPT-4o-mini:
+Called from `InsightEngine` per participant after all labels are finalized. Passes gpt-oss-20B (served via Groq):
 
 - The participant's messages with inline `[sarcastic]` / `[manipulative]` flags from the behavior model
 - Final computed fields: dominant emotion, tone, stability, sarcasm level, manipulation level
 
-GPT narrates what the models detected — it does not perform any detection itself. Returns `None` on any failure; `InsightEngine` falls back to templates silently.
+The LLM narrates what the models detected — it does not perform any detection itself. Returns `None` on any failure; `InsightEngine` falls back to templates silently.
 
 ### Stage 4 — Visualization Payload (`pipeline/visualizer.py`)
 
@@ -221,7 +221,7 @@ Single-page app with three views:
 1. **Upload** — drag-and-drop or file picker for `.txt`/`.json`, run pipeline button with animated progress
 2. **Participants** — color-coded cards per speaker showing tone, sarcasm, manipulation tags and summary preview; "View Conversation" button opens full conversation log with per-message badges
 3. **Analysis** — per-participant deep view:
-   - Profile card with GPT summary, dominant emotion, stability, risk flags
+   - Profile card with LLM summary (gpt-oss-20B via Groq), dominant emotion, stability, risk flags
    - Emotion intensity trend (Chart.js line)
    - Sarcasm detection timeline (Chart.js scatter)
    - Manipulation detection timeline (Chart.js scatter)
@@ -389,7 +389,7 @@ Training data sources include GoEmotions (Google), Kaggle emotion/sarcasm datase
 | ---------------------- | ------------------------------------------ |
 | FastAPI + Uvicorn      | Web server and API                         |
 | PyTorch + Transformers | Emotion and behavior model inference       |
-| OpenAI SDK             | GPT-4o-mini LLM summaries                  |
+| Groq SDK               | gpt-oss-20B LLM summaries                  |
 | Chart.js               | Frontend timeline charts                   |
 | NumPy                  | Numeric processing                         |
 | Matplotlib             | Plot functions (Streamlit version / tests) |
@@ -403,7 +403,7 @@ Training data sources include GoEmotions (Google), Kaggle emotion/sarcasm datase
 - [FastAPI](https://fastapi.tiangolo.com)
 - [Kaggle](https://www.kaggle.com)
 - [Plutchik Emotion Wheel](https://en.wikipedia.org/wiki/Robert_Plutchik)
-- [OpenAI API](https://platform.openai.com/docs)
+- [Groq API](https://console.groq.com/docs)
 - [Streamlit](https://streamlit.io)
 
 ## Acknowledgements

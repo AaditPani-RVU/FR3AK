@@ -72,7 +72,7 @@ def generate_llm_summary(
 
     try:
         resp = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             messages=[
                 {
                     "role": "system",
@@ -85,7 +85,7 @@ def generate_llm_summary(
                 },
                 {"role": "user", "content": user_prompt},
             ],
-            max_tokens=400,
+            max_tokens=600,
             temperature=0.4,
         )
         result = resp.choices[0].message.content
